@@ -154,6 +154,16 @@ LinkedIn: https://www.linkedin.com/in/val-rukhaylo-437a1b3b6/
 
 Copyright © 2026 Valentyn Rukhaylo / Altru.dev.
 
+## Open-source and commercial model
+
+MCP DriftGuard Core remains a useful open-source verifier: local inspection, baselines, signatures, drift analysis, CI output, and interoperable evidence formats belong in the public core.
+
+A future hosted or enterprise product may add fleet monitoring, history, approval workflows, RBAC/SSO, integrations, managed evidence, private deployment, and support without being required for local verification.
+
+See [COMMERCIAL.md](COMMERCIAL.md).
+
 ## License
 
-MIT. See [LICENSE](LICENSE).
+Licensed under the **Apache License 2.0**. See [LICENSE](LICENSE).
+
+Apache-2.0 permits commercial use and redistribution, includes an explicit patent grant, preserves attribution and NOTICE obligations, and does not grant project branding rights beyond customary attribution.
