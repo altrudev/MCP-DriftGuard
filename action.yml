@@ -16,7 +16,7 @@ inputs:
     required: false
     default: ""
   format:
-    description: text or json
+    description: text, json, or sarif
     required: false
     default: text
 runs:
