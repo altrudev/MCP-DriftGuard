@@ -1,0 +1,38 @@
+name: Format hardening branch
+
+on:
+  push:
+    branches:
+      - feature/v0.1-hardening
+
+permissions:
+  contents: write
+
+jobs:
+  gofmt:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/v0.1-hardening
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+          cache: false
+
+      - name: Normalize Go source
+        run: gofmt -w .
+
+      - name: Commit formatting changes
+        run: |
+          if git diff --quiet -- '*.go'; then
+            echo "Go source already formatted."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- '*.go'
+          git commit -m "gofmt Go sources"
+          git push origin HEAD:feature/v0.1-hardening
