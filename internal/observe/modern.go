@@ -35,8 +35,13 @@ func (c *Client) inspectModern(ctx context.Context, endpoint string, s *canonica
 	resp, proto, err := c.modernRPC(ctx, endpoint, 1, "server/discover", map[string]any{})
 	if err != nil {
 		var hs *httpStatusError
-		if errors.As(err, &hs) && (hs.Status == http.StatusBadRequest || hs.Status == http.StatusNotFound || hs.Status == http.StatusMethodNotAllowed) {
-			return false, true, nil
+		if errors.As(err, &hs) {
+			if hs.Status == http.StatusNotFound || hs.Status == http.StatusMethodNotAllowed {
+				return false, true, nil
+			}
+			if hs.Status == http.StatusBadRequest && legacyFallbackBody(hs.Body) {
+				return false, true, nil
+			}
 		}
 		return false, false, err
 	}
@@ -196,3 +201,12 @@ func readRPCBody(r io.Reader, contentType string) ([]byte, error) {
 
 func hasCap(m map[string]any, k string) bool { _, ok := m[k]; return ok }
 func contains(xs []string, s string) bool { for _, x := range xs { if x == s { return true } }; return false }
+
+
+func legacyFallbackBody(body string) bool {
+	var rr rpcResponse
+	if json.Unmarshal([]byte(body), &rr) == nil && rr.Error != nil {
+		return rr.Error.Code == -32601 || rr.Error.Code == -32022
+	}
+	return false
+}
