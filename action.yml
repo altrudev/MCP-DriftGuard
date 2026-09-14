@@ -1,0 +1,33 @@
+name: MCP DriftGuard
+description: Verify a live MCP endpoint against an approved DriftGuard baseline.
+author: Valentyn Rukhaylo / Altru.dev
+branding:
+  icon: shield
+  color: blue
+inputs:
+  endpoint:
+    description: MCP endpoint to verify
+    required: true
+  baseline:
+    description: Path to an MCP DriftGuard baseline
+    required: true
+  verify-key:
+    description: Optional path to an Ed25519 public verification key
+    required: false
+    default: ""
+  format:
+    description: text or json
+    required: false
+    default: text
+runs:
+  using: docker
+  image: Dockerfile
+  args:
+    - verify
+    - ${{ inputs.endpoint }}
+    - --baseline
+    - ${{ inputs.baseline }}
+    - --verify-key
+    - ${{ inputs.verify-key }}
+    - --format
+    - ${{ inputs.format }}

@@ -1,0 +1,5 @@
+/mcpdrift
+*.baseline.json
+*.ed25519.pem
+*.ed25519.pub.pem
+.DS_Store
