@@ -16,9 +16,10 @@ type Snapshot struct {
 }
 
 type Server struct {
-	Name            string `json:"name,omitempty"`
-	Version         string `json:"version,omitempty"`
-	ProtocolVersion string `json:"protocol_version,omitempty"`
+	Name              string   `json:"name,omitempty"`
+	Version           string   `json:"version,omitempty"`
+	ProtocolVersion   string   `json:"protocol_version,omitempty"`
+	SupportedVersions []string `json:"supported_versions,omitempty"`
 }
 
 type Tool struct {
@@ -43,15 +44,18 @@ type Prompt struct {
 
 type Auth struct {
 	WWWAuthenticate       string          `json:"www_authenticate,omitempty"`
+	ResourceMetadataURL   string          `json:"resource_metadata_url,omitempty"`
 	ProtectedResourceMeta json.RawMessage `json:"protected_resource_metadata,omitempty"`
 	AuthorizationMeta     json.RawMessage `json:"authorization_server_metadata,omitempty"`
 }
 
 type Transport struct {
-	Scheme       string `json:"scheme,omitempty"`
-	Host         string `json:"host,omitempty"`
-	TLSSubject   string `json:"tls_subject,omitempty"`
-	TLSIssuer    string `json:"tls_issuer,omitempty"`
-	TLSNotAfter  string `json:"tls_not_after,omitempty"`
-	HTTPProtocol string `json:"http_protocol,omitempty"`
+	Scheme        string `json:"scheme,omitempty"`
+	Host          string `json:"host,omitempty"`
+	TLSSubject    string `json:"tls_subject,omitempty"`
+	TLSIssuer     string `json:"tls_issuer,omitempty"`
+	TLSNotAfter   string `json:"tls_not_after,omitempty"`
+	TLSCertSHA256 string `json:"tls_cert_sha256,omitempty"`
+	TLSSPKISHA256 string `json:"tls_spki_sha256,omitempty"`
+	HTTPProtocol  string `json:"http_protocol,omitempty"`
 }
