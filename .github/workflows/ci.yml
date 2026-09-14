@@ -2,16 +2,34 @@ name: CI
 on:
   push:
   pull_request:
+
 permissions:
   contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23.x'
-      - run: go test ./...
-      - run: go vet ./...
-      - run: go build ./cmd/mcpdrift
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+
+      - name: Test
+        run: go test ./...
+
+      - name: Race detector
+        run: go test -race ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build CLI
+        run: go build ./cmd/mcpdrift
+
+      - name: Build demo fixture
+        run: go build ./examples/demo-server
