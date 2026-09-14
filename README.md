@@ -12,7 +12,7 @@ It is intentionally standalone: **no LLM, no DDC dependency, no hosted account, 
 
 ## Status
 
-Early v0.1 implementation. The CLI is functional, but the project should be treated as pre-release until interoperability testing across multiple production MCP implementations is complete.
+v0.1 release candidate. DriftGuard speaks the current MCP 2026-07-28 stateless protocol and falls back to legacy initialize/session-based servers through 2025-11-25. Treat the project as pre-release until interoperability testing across multiple independent production MCP implementations is complete.
 
 ## What it detects
 
@@ -21,7 +21,7 @@ Early v0.1 implementation. The CLI is functional, but the project should be trea
 - Tool annotation changes
 - Security-sensitive description changes
 - Added or removed resources and prompts
-- MCP server identity and protocol-version changes
+- MCP protocol-version and advertised-version changes\n- TLS certificate and public-key identity changes
 - Authentication challenge changes
 - Protected-resource / authorization metadata changes when captured
 - Endpoint and TLS identity changes
@@ -79,13 +79,57 @@ go build -o mcpdrift ./cmd/mcpdrift
   --baseline production.baseline.json
 ```
 
-JSON output:
+JSON or SARIF output:
 
 ```bash
 ./mcpdrift verify https://server.example/mcp \
   --baseline production.baseline.json \
   --format json
+
+./mcpdrift verify https://server.example/mcp \
+  --baseline production.baseline.json \
+  --format sarif > mcpdrift.sarif
 ```
+
+For an authenticated MCP endpoint, provide a bearer token only through the process environment:
+
+```bash
+MCPDRIFT_BEARER_TOKEN="$TOKEN" \
+  ./mcpdrift verify https://server.example/mcp \
+  --baseline production.baseline.json
+```
+
+The bearer token is used for HTTP requests and is not written into snapshots or baseline artifacts.
+
+## 90-second PASS → FAIL demo
+
+Start the included current-protocol MCP fixture:
+
+```bash
+go run ./examples/demo-server
+```
+
+In another terminal:
+
+```bash
+go build -o mcpdrift ./cmd/mcpdrift
+
+./mcpdrift baseline http://127.0.0.1:8787/mcp \
+  --output demo.baseline.json
+
+./mcpdrift verify http://127.0.0.1:8787/mcp \
+  --baseline demo.baseline.json
+```
+
+The result is `PASS`.
+
+Restart the fixture with drift enabled:
+
+```bash
+MCPDRIFT_DEMO_DRIFT=1 go run ./examples/demo-server
+```
+
+Run the same verification again. The server now exposes `export_customer_database`, so DriftGuard produces a HIGH-risk capability change and a `FAIL` exit.
 
 ## Signed baselines
 
@@ -130,15 +174,23 @@ go vet ./...
 go build ./cmd/mcpdrift
 ```
 
+## Protocol coverage
+
+- MCP 2026-07-28 stateless discovery using `server/discover`
+- Per-request protocol metadata and `Mcp-Method` routing headers
+- Legacy initialize/session fallback through 2025-11-25
+- Bounded pagination for tools, resources, and prompts
+- Fail-closed discovery when an advertised inventory cannot be enumerated
+- OAuth Protected Resource Metadata discovery
+- RFC 8414 / OpenID Connect authorization-server metadata discovery
+- TLS certificate and SPKI SHA-256 fingerprints
+
 ## Roadmap
 
-- Broader MCP transport/interoperability fixtures
-- OAuth protected-resource discovery and authorization-server metadata capture
-- Pagination and change-notification handling
-- SARIF output
-- GitHub Action packaging
+- Broader independent MCP interoperability fixtures
+- Change-notification/subscription observation
 - OpenTelemetry events
-- Container release
+- Published container release
 - Baseline approval metadata and rotation policy
 - Optional adapters for external governance systems
 
