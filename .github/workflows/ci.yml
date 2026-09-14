@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'push' && github.ref_name || '' }}
+          ref: feature/v0.1-hardening
 
       - uses: actions/setup-go@v5
         with:
@@ -20,7 +20,7 @@ jobs:
           cache: false
 
       - name: Normalize hardening branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/feature/v0.1-hardening' && github.actor != 'github-actions[bot]'
+        if: github.actor != 'github-actions[bot]'
         run: |
           gofmt -w .
           if git diff --quiet -- '*.go'; then
