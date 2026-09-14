@@ -160,6 +160,30 @@ Keep private signing keys outside the repository.
 | 4 | Baseline or key artifact error |
 | 5 | Baseline signature/integrity verification failure |
 
+## Post-certification drift
+
+Certification establishes an approved MCP package and reviewed runtime surface at a point in time. DriftGuard addresses the later operational question:
+
+> Does the MCP surface running now still match what was approved?
+
+This is directly useful in environments where publishers or administrators are expected to keep a live MCP implementation aligned with an approved or certified definition and resubmit material changes such as new tools or significant metadata changes.
+
+DriftGuard does not certify MCP servers and is not affiliated with or endorsed by Microsoft or the Model Context Protocol project. It provides independent integrity evidence that can complement certification, governance, change-management, and procurement workflows.
+
+A practical pattern is:
+
+```text
+approved / certified MCP package
+        ↓
+DriftGuard baseline
+        ↓
+live MCP endpoint
+        ↓
+continuous or CI verification
+        ↓
+PASS / REVIEW / FAIL
+```
+
 ## Trust boundary
 
 DriftGuard observes the externally visible MCP surface. It does **not** claim that an unchanged external surface proves an unchanged binary, source tree, dependency graph, container image, or backend implementation.
@@ -178,6 +202,7 @@ go build ./cmd/mcpdrift
 
 - MCP 2026-07-28 stateless discovery using `server/discover`
 - Per-request protocol metadata and `Mcp-Method` routing headers
+- Header-aware observation compatible with current 2026-07-28 stateless requests
 - Legacy initialize/session fallback through 2025-11-25
 - Bounded pagination for tools, resources, and prompts
 - Fail-closed discovery when an advertised inventory cannot be enumerated
@@ -188,6 +213,8 @@ go build ./cmd/mcpdrift
 ## Roadmap
 
 - Broader independent MCP interoperability fixtures
+- Cache-hint (`ttlMs` / `cacheScope`) drift observation
+- Named-operation (`Mcp-Name`) evidence where applicable
 - Change-notification/subscription observation
 - OpenTelemetry events
 - Published container release
