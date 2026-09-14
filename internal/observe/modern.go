@@ -88,97 +88,129 @@ func (c *Client) inspectModern(ctx context.Context, endpoint string, s *canonica
 				} `json:"tools"`
 				NextCursor string `json:"nextCursor"`
 			}
-			if err := json.Unmarshal(result, &v); err != nil { return "", err }
+			if err := json.Unmarshal(result, &v); err != nil {
+				return "", err
+			}
 			for _, x := range v.Tools {
-				s.Tools = append(s.Tools, canonical.Tool{Name:x.Name, Description:x.Description, InputSchema:x.InputSchema, Annotations:x.Annotations})
+				s.Tools = append(s.Tools, canonical.Tool{Name: x.Name, Description: x.Description, InputSchema: x.InputSchema, Annotations: x.Annotations})
 			}
 			return v.NextCursor, nil
-		}); err != nil { return false, false, err }
+		}); err != nil {
+			return false, false, err
+		}
 	}
 	if hasCap(dr.Capabilities, "resources") {
 		if err := c.paginateModern(ctx, endpoint, &id, "resources/list", func(result json.RawMessage) (string, error) {
 			var v struct {
 				Resources []struct {
-					URI string `json:"uri"`
-					Name string `json:"name"`
+					URI         string `json:"uri"`
+					Name        string `json:"name"`
 					Description string `json:"description"`
-					MIMEType string `json:"mimeType"`
+					MIMEType    string `json:"mimeType"`
 				} `json:"resources"`
 				NextCursor string `json:"nextCursor"`
 			}
-			if err := json.Unmarshal(result, &v); err != nil { return "", err }
+			if err := json.Unmarshal(result, &v); err != nil {
+				return "", err
+			}
 			for _, x := range v.Resources {
-				s.Resources = append(s.Resources, canonical.Resource{URI:x.URI, Name:x.Name, Description:x.Description, MIMEType:x.MIMEType})
+				s.Resources = append(s.Resources, canonical.Resource{URI: x.URI, Name: x.Name, Description: x.Description, MIMEType: x.MIMEType})
 			}
 			return v.NextCursor, nil
-		}); err != nil { return false, false, err }
+		}); err != nil {
+			return false, false, err
+		}
 	}
 	if hasCap(dr.Capabilities, "prompts") {
 		if err := c.paginateModern(ctx, endpoint, &id, "prompts/list", func(result json.RawMessage) (string, error) {
 			var v struct {
 				Prompts []struct {
-					Name string `json:"name"`
-					Description string `json:"description"`
-					Arguments json.RawMessage `json:"arguments"`
+					Name        string          `json:"name"`
+					Description string          `json:"description"`
+					Arguments   json.RawMessage `json:"arguments"`
 				} `json:"prompts"`
 				NextCursor string `json:"nextCursor"`
 			}
-			if err := json.Unmarshal(result, &v); err != nil { return "", err }
+			if err := json.Unmarshal(result, &v); err != nil {
+				return "", err
+			}
 			for _, x := range v.Prompts {
-				s.Prompts = append(s.Prompts, canonical.Prompt{Name:x.Name, Description:x.Description, Arguments:x.Arguments})
+				s.Prompts = append(s.Prompts, canonical.Prompt{Name: x.Name, Description: x.Description, Arguments: x.Arguments})
 			}
 			return v.NextCursor, nil
-		}); err != nil { return false, false, err }
+		}); err != nil {
+			return false, false, err
+		}
 	}
 	return true, false, nil
 }
 
 func modernMeta() map[string]any {
 	return map[string]any{
-		"io.modelcontextprotocol/protocolVersion": ModernProtocolVersion,
-		"io.modelcontextprotocol/clientInfo": map[string]any{"name":"mcpdrift","version":"0.1.0"},
+		"io.modelcontextprotocol/protocolVersion":    ModernProtocolVersion,
+		"io.modelcontextprotocol/clientInfo":         map[string]any{"name": "mcpdrift", "version": "0.1.0"},
 		"io.modelcontextprotocol/clientCapabilities": map[string]any{},
 	}
 }
 
 func (c *Client) modernRPC(ctx context.Context, endpoint string, id int, method string, params map[string]any) (rpcResponse, string, error) {
-	if params == nil { params = map[string]any{} }
+	if params == nil {
+		params = map[string]any{}
+	}
 	params["_meta"] = modernMeta()
-	payload := map[string]any{"jsonrpc":"2.0","id":id,"method":method,"params":params}
+	payload := map[string]any{"jsonrpc": "2.0", "id": id, "method": method, "params": params}
 	b, _ := json.Marshal(payload)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(b))
-	if err != nil { return rpcResponse{}, "", err }
+	if err != nil {
+		return rpcResponse{}, "", err
+	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
 	req.Header.Set("MCP-Protocol-Version", ModernProtocolVersion)
 	req.Header.Set("Mcp-Method", method)
 
 	res, err := c.HTTP.Do(req)
-	if err != nil { return rpcResponse{}, "", err }
+	if err != nil {
+		return rpcResponse{}, "", err
+	}
 	defer res.Body.Close()
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		body, _ := io.ReadAll(io.LimitReader(res.Body, 8192))
-		return rpcResponse{}, res.Proto, &httpStatusError{Status:res.StatusCode, Proto:res.Proto, Header:res.Header.Clone(), Body:string(body)}
+		return rpcResponse{}, res.Proto, &httpStatusError{Status: res.StatusCode, Proto: res.Proto, Header: res.Header.Clone(), Body: string(body)}
 	}
 	raw, err := readRPCBody(res.Body, res.Header.Get("Content-Type"))
-	if err != nil { return rpcResponse{}, res.Proto, err }
+	if err != nil {
+		return rpcResponse{}, res.Proto, err
+	}
 	var rr rpcResponse
-	if err := json.Unmarshal(raw, &rr); err != nil { return rr, res.Proto, err }
+	if err := json.Unmarshal(raw, &rr); err != nil {
+		return rr, res.Proto, err
+	}
 	return rr, res.Proto, nil
 }
 
-func (c *Client) paginateModern(ctx context.Context, endpoint string, id *int, method string, consume func(json.RawMessage)(string,error)) error {
+func (c *Client) paginateModern(ctx context.Context, endpoint string, id *int, method string, consume func(json.RawMessage) (string, error)) error {
 	cursor := ""
 	for page := 0; page < maxPages; page++ {
 		params := map[string]any{}
-		if cursor != "" { params["cursor"] = cursor }
+		if cursor != "" {
+			params["cursor"] = cursor
+		}
 		r, _, err := c.modernRPC(ctx, endpoint, *id, method, params)
 		(*id)++
-		if err != nil { return fmt.Errorf("%s page %d: %w", method, page+1, err) }
-		if r.Error != nil { return fmt.Errorf("%s page %d RPC error: %d %s", method, page+1, r.Error.Code, r.Error.Message) }
+		if err != nil {
+			return fmt.Errorf("%s page %d: %w", method, page+1, err)
+		}
+		if r.Error != nil {
+			return fmt.Errorf("%s page %d RPC error: %d %s", method, page+1, r.Error.Code, r.Error.Message)
+		}
 		next, err := consume(r.Result)
-		if err != nil { return fmt.Errorf("decode %s page %d: %w", method, page+1, err) }
-		if next == "" { return nil }
+		if err != nil {
+			return fmt.Errorf("decode %s page %d: %w", method, page+1, err)
+		}
+		if next == "" {
+			return nil
+		}
 		cursor = next
 	}
 	return fmt.Errorf("%s exceeded pagination limit", method)
@@ -193,15 +225,23 @@ func readRPCBody(r io.Reader, contentType string) ([]byte, error) {
 				return []byte(strings.TrimSpace(strings.TrimPrefix(line, "data:"))), nil
 			}
 		}
-		if err := sc.Err(); err != nil { return nil, err }
+		if err := sc.Err(); err != nil {
+			return nil, err
+		}
 		return nil, errors.New("SSE response contained no data event")
 	}
 	return io.ReadAll(io.LimitReader(r, 4<<20))
 }
 
 func hasCap(m map[string]any, k string) bool { _, ok := m[k]; return ok }
-func contains(xs []string, s string) bool { for _, x := range xs { if x == s { return true } }; return false }
-
+func contains(xs []string, s string) bool {
+	for _, x := range xs {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
 
 func legacyFallbackBody(body string) bool {
 	var rr rpcResponse
