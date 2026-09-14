@@ -2,16 +2,66 @@ name: CI
 on:
   push:
   pull_request:
+
 permissions:
   contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version: '1.23.x'
-      - run: go test ./...
-      - run: go vet ./...
-      - run: go build ./cmd/mcpdrift
+          cache: false
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+
+      - name: Test
+        run: go test ./...
+
+      - name: Race detector
+        run: go test -race ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build CLI
+        run: go build ./cmd/mcpdrift
+
+      - name: Build demo fixture
+        run: go build ./examples/demo-server
+
+      - name: Verify PASS to FAIL demo
+        run: |
+          set -euo pipefail
+
+          ./demo-server >/tmp/mcpdrift-demo.log 2>&1 &
+          demo_pid=$!
+          trap 'kill "$demo_pid" 2>/dev/null || true' EXIT
+          sleep 1
+
+          ./mcpdrift baseline http://127.0.0.1:8787/mcp             --output /tmp/demo.baseline.json
+
+          ./mcpdrift verify http://127.0.0.1:8787/mcp             --baseline /tmp/demo.baseline.json
+
+          kill "$demo_pid"
+          wait "$demo_pid" 2>/dev/null || true
+
+          MCPDRIFT_DEMO_DRIFT=1 ./demo-server >/tmp/mcpdrift-demo-drift.log 2>&1 &
+          demo_pid=$!
+          sleep 1
+
+          set +e
+          ./mcpdrift verify http://127.0.0.1:8787/mcp             --baseline /tmp/demo.baseline.json             >/tmp/mcpdrift-drift-result.txt 2>&1
+          status=$?
+          set -e
+
+          cat /tmp/mcpdrift-drift-result.txt
+
+          test "$status" -eq 2
+          grep -q "Verdict: FAIL" /tmp/mcpdrift-drift-result.txt
+          grep -q "export_customer_database" /tmp/mcpdrift-drift-result.txt

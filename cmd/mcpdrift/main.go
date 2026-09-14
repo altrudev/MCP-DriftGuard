@@ -9,7 +9,7 @@ import (
 
 	"github.com/altrudev/MCP-DriftGuard/internal/baseline"
 	mdiff "github.com/altrudev/MCP-DriftGuard/internal/diff"
-	"github.com/altrudev/MCP-DriftGuard/internal/probe"
+	"github.com/altrudev/MCP-DriftGuard/internal/observe"
 	"github.com/altrudev/MCP-DriftGuard/internal/report"
 )
 
@@ -45,11 +45,11 @@ func run(args []string) int {
 
 func inspect(args []string) int {
 	fs := flag.NewFlagSet("inspect", flag.ContinueOnError)
-	format := fs.String("format", "text", "text or json")
+	format := fs.String("format", "text", "text, json, or sarif")
 	if parseOneEndpoint(fs, args) != nil || fs.NArg() != 1 {
 		return 3
 	}
-	s, err := probe.New().Inspect(context.Background(), fs.Arg(0))
+	s, err := observe.New().Inspect(context.Background(), fs.Arg(0))
 	if err != nil {
 		return failProbe(err)
 	}
@@ -66,7 +66,7 @@ func createBaseline(args []string) int {
 	if parseOneEndpoint(fs, args) != nil || fs.NArg() != 1 {
 		return 3
 	}
-	s, err := probe.New().Inspect(context.Background(), fs.Arg(0))
+	s, err := observe.New().Inspect(context.Background(), fs.Arg(0))
 	if err != nil {
 		return failProbe(err)
 	}
@@ -89,7 +89,7 @@ func verify(args []string) int {
 	fs := flag.NewFlagSet("verify", flag.ContinueOnError)
 	base := fs.String("baseline", "mcpdrift.baseline.json", "baseline path")
 	pubPath := fs.String("verify-key", "", "Ed25519 public key PEM")
-	format := fs.String("format", "text", "text or json")
+	format := fs.String("format", "text", "text, json, or sarif")
 	if parseOneEndpoint(fs, args) != nil || fs.NArg() != 1 {
 		return 3
 	}
@@ -104,7 +104,7 @@ func verify(args []string) int {
 	if err := a.Validate(pub); err != nil {
 		return fail(err, 5)
 	}
-	live, err := probe.New().Inspect(context.Background(), fs.Arg(0))
+	live, err := observe.New().Inspect(context.Background(), fs.Arg(0))
 	if err != nil {
 		return failProbe(err)
 	}
@@ -123,7 +123,7 @@ func verify(args []string) int {
 
 func diffCmd(args []string) int {
 	fs := flag.NewFlagSet("diff", flag.ContinueOnError)
-	format := fs.String("format", "text", "text or json")
+	format := fs.String("format", "text", "text, json, or sarif")
 	if fs.Parse(args) != nil || fs.NArg() != 2 {
 		return 3
 	}
