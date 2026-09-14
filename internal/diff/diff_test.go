@@ -18,7 +18,7 @@ func TestAddedToolIsHighRisk(t *testing.T){
 func TestSchemaChangeIsHighRisk(t *testing.T){
 	a:=canonical.Snapshot{Endpoint:"https://x",Tools:[]canonical.Tool{{Name:"search",InputSchema:json.RawMessage(`{"type":"string"}`)}}}
 	b:=a
-	b.Tools=[]canonical.Tool{{Name:"search",InputSchema:json.RawMessage(`{"type":["string","object"]}`)}}}
+	b.Tools=[]canonical.Tool{{Name:"search",InputSchema:json.RawMessage(`{"type":["string","object"]}`)}}
 	r:=Compare(a,b)
 	if r.Score<35{t.Fatalf("expected fail-level score: %#v",r)}
 }
