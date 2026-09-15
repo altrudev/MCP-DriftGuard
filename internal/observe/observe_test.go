@@ -190,7 +190,6 @@ func TestAuthMetadataPathInsertion(t *testing.T) {
 	}
 }
 
-
 func TestBearerTokenAppliedOnlyToMCPRequests(t *testing.T) {
 	var sawMCPAuth bool
 	var sawMetadataAuth bool
@@ -214,7 +213,7 @@ func TestBearerTokenAppliedOnlyToMCPRequests(t *testing.T) {
 				"jsonrpc": "2.0", "id": 1,
 				"result": map[string]any{
 					"supportedVersions": []string{ModernProtocolVersion},
-					"capabilities": map[string]any{},
+					"capabilities":      map[string]any{},
 				},
 			})
 			return
@@ -275,7 +274,7 @@ func TestDuplicateToolInventoryRejected(t *testing.T) {
 				"jsonrpc": "2.0", "id": 1,
 				"result": map[string]any{
 					"supportedVersions": []string{ModernProtocolVersion},
-					"capabilities": map[string]any{"tools": map[string]any{}},
+					"capabilities":      map[string]any{"tools": map[string]any{}},
 				},
 			})
 		case "tools/list":
