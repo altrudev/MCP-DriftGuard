@@ -23,7 +23,6 @@ func TestSignedBaseline(t *testing.T) {
 	}
 }
 
-
 func TestVerificationKeyRejectsStrippedSignature(t *testing.T) {
 	pub, priv, _ := ed25519.GenerateKey(rand.Reader)
 	a, err := New(canonical.Snapshot{Format: "mcpdrift-snapshot/v1", Endpoint: "https://x"}, priv)
