@@ -44,6 +44,12 @@ func Compare(old, live canonical.Snapshot) Result {
 	if old.Server.Name != live.Server.Name {
 		changes = append(changes, Change{Medium, "metadata", "server.name", "changed", old.Server.Name, live.Server.Name, "self-reported server name changed"})
 	}
+	if old.Server.Version != live.Server.Version {
+		changes = append(changes, Change{Medium, "metadata", "server.version", "changed", old.Server.Version, live.Server.Version, "self-reported server version changed"})
+	}
+	if !jsonValueEqual(old.Capabilities, live.Capabilities) {
+		changes = append(changes, Change{High, "capability", "capabilities", "changed", old.Capabilities, live.Capabilities, "advertised MCP capabilities changed"})
+	}
 	if !sameStrings(old.Server.SupportedVersions, live.Server.SupportedVersions) {
 		changes = append(changes, Change{Medium, "protocol", "server.supported_versions", "changed", old.Server.SupportedVersions, live.Server.SupportedVersions, "advertised protocol versions changed"})
 	}
@@ -216,9 +222,14 @@ func compareResources(a, b []canonical.Resource) []Change {
 		bm[key(x)] = x
 	}
 	var out []Change
-	for n := range am {
-		if _, ok := bm[n]; !ok {
+	for n, x := range am {
+		y, ok := bm[n]
+		if !ok {
 			out = append(out, Change{Low, "capability", "resources." + n, "removed", n, nil, "resource removed"})
+			continue
+		}
+		if x != y {
+			out = append(out, Change{Medium, "capability", "resources." + n, "changed", x, y, "resource definition changed"})
 		}
 	}
 	for n := range bm {
@@ -254,7 +265,28 @@ func comparePrompts(a, b []canonical.Prompt) []Change {
 	return out
 }
 
-func rawEqual(a, b json.RawMessage) bool { return bytes.Equal(bytes.TrimSpace(a), bytes.TrimSpace(b)) }
+func rawEqual(a, b json.RawMessage) bool {
+	a = bytes.TrimSpace(a)
+	b = bytes.TrimSpace(b)
+	if len(a) == 0 || len(b) == 0 {
+		return len(a) == len(b)
+	}
+	var av, bv any
+	ad := json.NewDecoder(bytes.NewReader(a))
+	bd := json.NewDecoder(bytes.NewReader(b))
+	ad.UseNumber()
+	bd.UseNumber()
+	if ad.Decode(&av) != nil || bd.Decode(&bv) != nil {
+		return bytes.Equal(a, b)
+	}
+	return jsonValueEqual(av, bv)
+}
+
+func jsonValueEqual(a, b any) bool {
+	ab, errA := json.Marshal(a)
+	bb, errB := json.Marshal(b)
+	return errA == nil && errB == nil && bytes.Equal(ab, bb)
+}
 
 func rawValue(a json.RawMessage) any {
 	if len(bytes.TrimSpace(a)) == 0 {
