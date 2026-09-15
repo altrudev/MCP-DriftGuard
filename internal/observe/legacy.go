@@ -141,7 +141,8 @@ func (c *Client) legacyRPC(ctx context.Context, endpoint, session string, payloa
 		req.Header.Set("Mcp-Session-Id", session)
 	}
 
-	res, err := c.HTTP.Do(req)
+	c.authorizeMCP(req)
+	res, err := c.do(req)
 	if err != nil {
 		return rpcResponse{}, "", "", err
 	}
@@ -174,7 +175,8 @@ func (c *Client) notifyLegacy(ctx context.Context, endpoint, session string, pay
 		req.Header.Set("Mcp-Session-Id", session)
 	}
 
-	res, err := c.HTTP.Do(req)
+	c.authorizeMCP(req)
+	res, err := c.do(req)
 	if err != nil {
 		return err
 	}
