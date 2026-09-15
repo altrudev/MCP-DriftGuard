@@ -67,3 +67,39 @@ func TestSelfReportedNameChangeIsNotIdentityFailure(t *testing.T) {
 		t.Fatalf("unexpected server-name treatment: %#v", r)
 	}
 }
+
+func TestServerVersionChangeIsDetected(t *testing.T) {
+	old := canonical.Snapshot{Server: canonical.Server{Version: "1"}}
+	live := canonical.Snapshot{Server: canonical.Server{Version: "2"}}
+	r := Compare(old, live)
+	if r.Match {
+		t.Fatal("server version drift was missed")
+	}
+}
+
+func TestAdvertisedCapabilityChangeIsHighRisk(t *testing.T) {
+	old := canonical.Snapshot{Capabilities: map[string]any{"tools": map[string]any{}}}
+	live := canonical.Snapshot{Capabilities: map[string]any{"tools": map[string]any{}, "sampling": map[string]any{}}}
+	r := Compare(old, live)
+	if r.Match || r.Score < 35 {
+		t.Fatalf("capability drift not fail-level: %#v", r)
+	}
+}
+
+func TestResourceDefinitionChangeIsDetected(t *testing.T) {
+	old := canonical.Snapshot{Resources: []canonical.Resource{{URI: "file:///x", Name: "x", MIMEType: "text/plain"}}}
+	live := canonical.Snapshot{Resources: []canonical.Resource{{URI: "file:///x", Name: "x", MIMEType: "application/json"}}}
+	r := Compare(old, live)
+	if r.Match {
+		t.Fatal("resource mutation was missed")
+	}
+}
+
+func TestRawJSONKeyOrderDoesNotCreateDrift(t *testing.T) {
+	old := canonical.Snapshot{Tools: []canonical.Tool{{Name: "x", InputSchema: json.RawMessage(`{"type":"object","properties":{"a":{"type":"string"},"b":{"type":"number"}}}`)}}}
+	live := canonical.Snapshot{Tools: []canonical.Tool{{Name: "x", InputSchema: json.RawMessage(`{"properties":{"b":{"type":"number"},"a":{"type":"string"}},"type":"object"}`)}}}
+	r := Compare(old, live)
+	if !r.Match {
+		t.Fatalf("semantic-equivalent JSON created drift: %#v", r)
+	}
+}

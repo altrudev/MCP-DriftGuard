@@ -189,3 +189,109 @@ func TestAuthMetadataPathInsertion(t *testing.T) {
 		t.Fatalf("authorization metadata not captured: %#v", s.Auth)
 	}
 }
+
+func TestBearerTokenAppliedOnlyToMCPRequests(t *testing.T) {
+	var sawMCPAuth bool
+	var sawMetadataAuth bool
+	var base string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/oauth-protected-resource/mcp" {
+			sawMetadataAuth = r.Header.Get("Authorization") != ""
+			json.NewEncoder(w).Encode(map[string]any{"resource": base + "/mcp"})
+			return
+		}
+		if r.Header.Get("Authorization") == "Bearer secret-token" {
+			sawMCPAuth = true
+		}
+		var req struct {
+			Method string `json:"method"`
+		}
+		json.NewDecoder(r.Body).Decode(&req)
+		w.Header().Set("Content-Type", "application/json")
+		if req.Method == "server/discover" {
+			json.NewEncoder(w).Encode(map[string]any{
+				"jsonrpc": "2.0", "id": 1,
+				"result": map[string]any{
+					"supportedVersions": []string{ModernProtocolVersion},
+					"capabilities":      map[string]any{},
+				},
+			})
+			return
+		}
+		t.Fatalf("unexpected method %s", req.Method)
+	}))
+	defer srv.Close()
+	base = srv.URL
+
+	c := New()
+	c.BearerToken = "secret-token"
+	if _, err := c.Inspect(context.Background(), srv.URL+"/mcp"); err != nil {
+		t.Fatal(err)
+	}
+	if !sawMCPAuth {
+		t.Fatal("bearer token was not applied to MCP request")
+	}
+	if sawMetadataAuth {
+		t.Fatal("bearer token leaked to metadata discovery request")
+	}
+}
+
+func TestRedirectsAreNotFollowed(t *testing.T) {
+	targetHit := false
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		targetHit = true
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer target.Close()
+
+	source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL, http.StatusFound)
+	}))
+	defer source.Close()
+
+	if _, err := New().Inspect(context.Background(), source.URL); err == nil {
+		t.Fatal("redirected MCP endpoint unexpectedly accepted")
+	}
+	if targetHit {
+		t.Fatal("redirect target was contacted")
+	}
+}
+
+func TestDuplicateToolInventoryRejected(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			http.NotFound(w, r)
+			return
+		}
+		var req struct {
+			Method string `json:"method"`
+		}
+		json.NewDecoder(r.Body).Decode(&req)
+		w.Header().Set("Content-Type", "application/json")
+		switch req.Method {
+		case "server/discover":
+			json.NewEncoder(w).Encode(map[string]any{
+				"jsonrpc": "2.0", "id": 1,
+				"result": map[string]any{
+					"supportedVersions": []string{ModernProtocolVersion},
+					"capabilities":      map[string]any{"tools": map[string]any{}},
+				},
+			})
+		case "tools/list":
+			json.NewEncoder(w).Encode(map[string]any{
+				"jsonrpc": "2.0", "id": 2,
+				"result": map[string]any{
+					"tools": []any{
+						map[string]any{"name": "dup", "inputSchema": map[string]any{"type": "object"}},
+						map[string]any{"name": "dup", "inputSchema": map[string]any{"type": "object"}},
+					},
+				},
+			})
+		}
+	}))
+	defer srv.Close()
+
+	if _, err := New().Inspect(context.Background(), srv.URL); err == nil {
+		t.Fatal("duplicate inventory accepted")
+	}
+}

@@ -169,7 +169,8 @@ func (c *Client) modernRPC(ctx context.Context, endpoint string, id int, method 
 	req.Header.Set("MCP-Protocol-Version", ModernProtocolVersion)
 	req.Header.Set("Mcp-Method", method)
 
-	res, err := c.HTTP.Do(req)
+	c.authorizeMCP(req)
+	res, err := c.do(req)
 	if err != nil {
 		return rpcResponse{}, "", err
 	}
