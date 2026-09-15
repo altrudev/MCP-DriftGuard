@@ -183,7 +183,6 @@ func tlsInfo(host, port string) (certInfo, error) {
 	}, nil
 }
 
-
 func validateAuthorizationServerTarget(ctx context.Context, endpoint, target *url.URL) error {
 	if target.Hostname() == "" {
 		return fmt.Errorf("authorization server URL has no host: %s", target.String())
