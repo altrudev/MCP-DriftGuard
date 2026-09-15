@@ -80,8 +80,8 @@ func (c *Client) discoverAuth(ctx context.Context, endpoint *url.URL, s *canonic
 		if err != nil {
 			return fmt.Errorf("authorization server URL: %w", err)
 		}
-		if asu.Scheme != "https" && !(asu.Scheme == "http" && isLoopbackHost(asu.Hostname())) {
-			return fmt.Errorf("unsafe authorization server URL: %s", asu.String())
+		if err := validateAuthorizationServerTarget(ctx, endpoint, asu); err != nil {
+			return err
 		}
 		for _, well := range authorizationMetadataCandidates(asu) {
 			body, status, err := c.getJSON(ctx, well)
@@ -125,7 +125,7 @@ func (c *Client) getJSON(ctx context.Context, target string) ([]byte, int, error
 		return nil, 0, err
 	}
 	req.Header.Set("Accept", "application/json")
-	res, err := c.HTTP.Do(req)
+	res, err := c.do(req)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -181,4 +181,55 @@ func tlsInfo(host, port string) (certInfo, error) {
 		certSHA256: "sha256:" + hex.EncodeToString(certSum[:]),
 		spkiSHA256: "sha256:" + hex.EncodeToString(spkiSum[:]),
 	}, nil
+}
+
+
+func validateAuthorizationServerTarget(ctx context.Context, endpoint, target *url.URL) error {
+	if target.Hostname() == "" {
+		return fmt.Errorf("authorization server URL has no host: %s", target.String())
+	}
+	if target.Scheme == "http" {
+		if !(isLoopbackHost(endpoint.Hostname()) && isLoopbackHost(target.Hostname())) {
+			return fmt.Errorf("unsafe authorization server URL: %s", target.String())
+		}
+		return nil
+	}
+	if target.Scheme != "https" {
+		return fmt.Errorf("unsafe authorization server URL: %s", target.String())
+	}
+	if isLoopbackHost(target.Hostname()) {
+		if !isLoopbackHost(endpoint.Hostname()) {
+			return fmt.Errorf("authorization server loopback target rejected for non-loopback MCP endpoint: %s", target.String())
+		}
+		return nil
+	}
+	if ip := net.ParseIP(target.Hostname()); ip != nil {
+		if unsafeMetadataIP(ip) {
+			return fmt.Errorf("authorization server target resolves to a non-public address: %s", target.String())
+		}
+		return nil
+	}
+	ips, err := net.DefaultResolver.LookupIP(ctx, "ip", target.Hostname())
+	if err != nil {
+		return fmt.Errorf("resolve authorization server host %q: %w", target.Hostname(), err)
+	}
+	if len(ips) == 0 {
+		return fmt.Errorf("authorization server host %q resolved to no addresses", target.Hostname())
+	}
+	for _, ip := range ips {
+		if unsafeMetadataIP(ip) {
+			return fmt.Errorf("authorization server host %q resolves to non-public address %s", target.Hostname(), ip.String())
+		}
+	}
+	return nil
+}
+
+func unsafeMetadataIP(ip net.IP) bool {
+	return ip.IsPrivate() ||
+		ip.IsLoopback() ||
+		ip.IsLinkLocalUnicast() ||
+		ip.IsLinkLocalMulticast() ||
+		ip.IsUnspecified() ||
+		ip.IsMulticast() ||
+		!ip.IsGlobalUnicast()
 }
