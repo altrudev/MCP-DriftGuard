@@ -68,7 +68,6 @@ func TestSelfReportedNameChangeIsNotIdentityFailure(t *testing.T) {
 	}
 }
 
-
 func TestServerVersionChangeIsDetected(t *testing.T) {
 	old := canonical.Snapshot{Server: canonical.Server{Version: "1"}}
 	live := canonical.Snapshot{Server: canonical.Server{Version: "2"}}
