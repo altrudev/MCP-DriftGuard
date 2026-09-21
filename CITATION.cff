@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use, evaluate, discuss, or reference MCP DriftGuard, please cite it using this metadata."
+title: "MCP DriftGuard"
+type: software
+authors:
+  - family-names: "Rukhaylo"
+    given-names: "Valentyn"
+    website: "https://altru.dev/about"
+repository-code: "https://github.com/altrudev/MCP-DriftGuard"
+url: "https://altru.dev"
+version: "0.1.0"
+license: "Apache-2.0"
+abstract: "A standalone verifier for detecting security-relevant drift between an approved MCP server baseline and its live externally visible surface."
+keywords:
+  - "Model Context Protocol"
+  - "MCP"
+  - "drift detection"
+  - "software assurance"
+  - "security"
