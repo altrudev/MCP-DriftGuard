@@ -225,11 +225,14 @@ go build ./cmd/mcpdrift
 
 MCP DriftGuard is designed as a standalone product. Optional integrations may be added later under adapters, but the core CLI and baseline format will not require DDC, DSR, or any Altru.dev infrastructure.
 
-## Author
+## Author and provenance
 
-**Valentyn Rukhaylo**  
-Altru.dev  
+**[Valentyn Rukhaylo](https://altru.dev/about) / [Altru.dev](https://altru.dev/)**  
 LinkedIn: https://www.linkedin.com/in/val-rukhaylo-437a1b3b6/
+
+Related assurance practice: [DDC Assurance Lab](https://altru.dev/ddc-assurance-lab) · [ddcal.ca](https://ddcal.ca/). MCP DriftGuard remains standalone and does not require DDC/DDCAL infrastructure.
+
+See [PROVENANCE.md](PROVENANCE.md), [AUTHORS.md](AUTHORS.md), and [CITATION.cff](CITATION.cff).
 
 Copyright © 2026 Valentyn Rukhaylo / Altru.dev.
 
