@@ -67,7 +67,11 @@ func InspectStdio(parent context.Context, binary string, args []string) (snapsho
 	identity := "stdio://" + hex.EncodeToString(fingerprint[:])
 	ctx, cancel := context.WithTimeout(parent, 20*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, target, args...)
+	launch, launchArgs, sandboxErr := stdioSandboxCommand(target, args)
+	if sandboxErr != nil {
+		return snapshot, sandboxErr
+	}
+	cmd := exec.CommandContext(ctx, launch, launchArgs...)
 	configureStdioProcess(cmd)
 	cmd.Env = []string{"PATH=/usr/bin:/bin", "HOME=/nonexistent"}
 	cmd.Stderr = io.Discard
