@@ -423,3 +423,19 @@ func TestUnauthorizedChallengeDoesNotPersistSecretParameters(t *testing.T) {
 		t.Fatal("untrusted challenge parameters retained")
 	}
 }
+
+func TestUntrustedHTTPErrorBodyNotExposed(t *testing.T) {
+	const canary = "synthetic-secret-in-error-body-never-log"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(canary))
+	}))
+	defer srv.Close()
+	_, err := New().Inspect(context.Background(), srv.URL+"/mcp")
+	if err == nil {
+		t.Fatal("expected refusal")
+	}
+	if strings.Contains(err.Error(), canary) {
+		t.Fatal("server response body escaped into diagnostic error")
+	}
+}

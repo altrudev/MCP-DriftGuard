@@ -31,7 +31,9 @@ type httpStatusError struct {
 }
 
 func (e *httpStatusError) Error() string {
-	return fmt.Sprintf("HTTP %d from MCP endpoint: %s", e.Status, e.Body)
+	// Response bodies are untrusted and may contain credentials. Retain them only
+	// internally for bounded protocol fallback classification, never in errors.
+	return fmt.Sprintf("HTTP %d from MCP endpoint", e.Status)
 }
 
 func (c *Client) Inspect(ctx context.Context, endpoint string) (canonical.Snapshot, error) {
