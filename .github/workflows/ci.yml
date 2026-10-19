@@ -70,3 +70,11 @@ jobs:
           test "$status" -eq 2
           grep -q "Verdict: FAIL" /tmp/mcpdrift-drift-result.txt
           grep -q "export_customer_database" /tmp/mcpdrift-drift-result.txt
+
+      - name: Artifact integrity mutation tests
+        run: python3 scripts/test_verify_artifacts.py
+
+      - name: Build and verify cross-platform release candidates
+        run: |
+          python3 scripts/build_artifacts.py "${{ runner.temp }}/mcpdrift-candidates"
+          python3 scripts/verify_artifacts.py "${{ runner.temp }}/mcpdrift-candidates"
