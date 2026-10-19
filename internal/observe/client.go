@@ -20,7 +20,7 @@ type Client struct {
 }
 
 func New() *Client {
-	return &Client{HTTP: &http.Client{Timeout: 15 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse }}}
+	return &Client{HTTP: &http.Client{Timeout: 15 * time.Second, Transport: safeHTTPTransport(), CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse }}}
 }
 
 type httpStatusError struct {
