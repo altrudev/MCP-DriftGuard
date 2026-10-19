@@ -2,7 +2,9 @@
 """Mutation checks for candidate artifact manifest validation."""
 import json
 import pathlib
+import sys
 import tempfile
+sys.dont_write_bytecode = True
 from verify_artifacts import PLATFORMS, verify
 import hashlib
 

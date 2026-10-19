@@ -6,6 +6,7 @@ import os
 import pathlib
 import subprocess
 import sys
+sys.dont_write_bytecode = True
 from verify_artifacts import PLATFORMS, verify
 
 root = pathlib.Path(__file__).resolve().parents[1]
