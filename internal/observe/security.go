@@ -45,8 +45,11 @@ func (c *Client) discoverAuth(ctx context.Context, endpoint *url.URL, s *canonic
 		if err != nil {
 			return err
 		}
+		if mu.User != nil || mu.RawQuery != "" || mu.Fragment != "" || mu.Hostname() == "" {
+			return fmt.Errorf("resource metadata URL must not contain userinfo, query or fragment")
+		}
 		if !sameOrigin(endpoint, mu) {
-			return fmt.Errorf("resource metadata URL must be same-origin: %s", candidate)
+			return fmt.Errorf("resource metadata URL must be same-origin")
 		}
 		body, status, err := c.getJSON(ctx, candidate)
 		if err != nil {

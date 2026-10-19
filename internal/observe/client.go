@@ -44,6 +44,9 @@ func (c *Client) Inspect(ctx context.Context, endpoint string) (canonical.Snapsh
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return canonical.Snapshot{}, errors.New("endpoint must use http or https")
 	}
+	if u.User != nil || u.Fragment != "" || u.Hostname() == "" {
+		return canonical.Snapshot{}, errors.New("MCP endpoint requires host and must not contain userinfo or fragment")
+	}
 
 	s := canonical.Snapshot{
 		Format:     "mcpdrift-snapshot/v1",

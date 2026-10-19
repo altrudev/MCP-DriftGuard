@@ -439,3 +439,40 @@ func TestUntrustedHTTPErrorBodyNotExposed(t *testing.T) {
 		t.Fatal("server response body escaped into diagnostic error")
 	}
 }
+
+func TestRejectEndpointURLCredentialsBeforeNetwork(t *testing.T) {
+	for _, endpoint := range []string{"http://user:synthetic-secret@127.0.0.1:1234/mcp", "http://127.0.0.1:1234/mcp#fragment"} {
+		_, err := New().Inspect(context.Background(), endpoint)
+		if err == nil {
+			t.Fatalf("unsafe endpoint accepted: %q", endpoint)
+		}
+		if strings.Contains(err.Error(), "synthetic-secret") {
+			t.Fatal("userinfo disclosed in error")
+		}
+	}
+}
+
+func TestRejectResourceMetadataURLWithUserinfoBeforeFetch(t *testing.T) {
+	var metadataRequests int
+	var srv *httptest.Server
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/resource" {
+			metadataRequests++
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("WWW-Authenticate", `Bearer resource_metadata="http://synthetic-secret@`+strings.TrimPrefix(srv.URL, "http://")+`/.well-known/resource"`)
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer srv.Close()
+	_, err := New().Inspect(context.Background(), srv.URL+"/mcp")
+	if err == nil {
+		t.Fatal("expected unsafe resource metadata URL refusal")
+	}
+	if metadataRequests != 0 {
+		t.Fatalf("sent metadata request with URL credentials: %d", metadataRequests)
+	}
+	if strings.Contains(err.Error(), "synthetic-secret") {
+		t.Fatal("metadata credential exposed in error")
+	}
+}
