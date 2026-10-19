@@ -6,7 +6,9 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -91,5 +93,38 @@ func TestSandboxEscapedProcessGroupCannotKeepPipeOpen(t *testing.T) {
 	case <-drained:
 	case <-time.After(3 * time.Second):
 		t.Fatal("escaped process group retained stdout after sandbox termination")
+	}
+}
+
+func TestSandboxApprovedReadOnlyPackageMount(t *testing.T) {
+	if _, err := exec.LookPath("bwrap"); err != nil {
+		t.Skip("bubblewrap unavailable")
+	}
+	dir := t.TempDir()
+	// The sandbox requires a package subtree under /tmp, not a broad host mount.
+	if !strings.HasPrefix(dir, "/tmp/") {
+		t.Skip("test temporary directory not beneath /tmp")
+	}
+	if err := os.WriteFile(filepath.Join(dir, "server-marker"), []byte("scoped-package-data"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("MCPDRIFT_STDIO_SANDBOX", "bwrap")
+	t.Setenv("MCPDRIFT_STDIO_SANDBOX_RO_DIR", dir)
+	binary, args, err := stdioSandboxCommand("/bin/cat", []string{filepath.Join(dir, "server-marker")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	output, err := exec.Command(binary, args...).CombinedOutput()
+	if err != nil {
+		t.Fatalf("read-only package mount unavailable: %v %s", err, output)
+	}
+	if string(output) != "scoped-package-data" {
+		t.Fatalf("wrong package payload: %s", output)
+	}
+	for _, bad := range []string{"/", "/tmp", "relative/path"} {
+		t.Setenv("MCPDRIFT_STDIO_SANDBOX_RO_DIR", bad)
+		if _, _, err := stdioSandboxCommand("/bin/true", nil); err == nil {
+			t.Fatalf("unscoped mount accepted %q", bad)
+		}
 	}
 }
