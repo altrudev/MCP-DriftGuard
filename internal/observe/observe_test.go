@@ -397,3 +397,29 @@ func TestOAuthIssuerApprovalIsExactOrigin(t *testing.T) {
 		t.Fatal("issuer approved through path-bearing allowlist")
 	}
 }
+
+// A hostile MCP endpoint can put credential-like values in challenge extras.
+// Only the required resource_metadata URL is retained in the snapshot.
+func TestUnauthorizedChallengeDoesNotPersistSecretParameters(t *testing.T) {
+	const secret = "synthetic-canary-never-persist-9e82a"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("WWW-Authenticate", `Bearer realm="`+secret+`", error_description="`+secret+`", resource_metadata="http://127.0.0.1/.well-known/oauth-protected-resource"`)
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer server.Close()
+	result, _ := New().Inspect(context.Background(), server.URL+"/mcp")
+	contents, err := json.Marshal(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(contents), secret) {
+		t.Fatalf("challenge secret persisted in snapshot")
+	}
+	if strings.Contains(result.Auth.WWWAuthenticate, "realm") {
+		t.Fatal("untrusted challenge parameters retained")
+	}
+}

@@ -86,7 +86,12 @@ func (c *Client) captureUnauthorized(ctx context.Context, endpoint *url.URL, s *
 	var hs *httpStatusError
 	if errors.As(err, &hs) && hs.Status == http.StatusUnauthorized {
 		s.Transport.HTTPProtocol = hs.Proto
-		s.Auth.WWWAuthenticate = hs.Header.Get("WWW-Authenticate")
+		// Persist only the resource-metadata reference needed for discovery.
+		// Untrusted challenge parameters (error_description, realm, etc.) may
+		// contain tokens or operator data and must not enter evidence files.
+		if m := resourceMetadataRE.FindStringSubmatch(hs.Header.Get("WWW-Authenticate")); len(m) == 2 {
+			s.Auth.WWWAuthenticate = `Bearer resource_metadata="` + m[1] + `"`
+		}
 		_ = c.discoverAuth(ctx, endpoint, s)
 	}
 }
