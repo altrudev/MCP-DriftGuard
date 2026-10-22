@@ -1,4 +1,5 @@
-//! Offline authorization only. No verifier execution or key generation.
+//! Experimental offline authorization and constrained verifier replay. No key generation.
+pub mod runner;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use ed25519_dalek::{Signature, VerifyingKey};
 use serde::{Deserialize, Serialize};

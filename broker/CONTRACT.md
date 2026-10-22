@@ -14,7 +14,7 @@ Reference: `scripts/approved_verification_evidence.py` and `scripts/evidence_sig
 | Time | issued <= now < expires; lifetime <= 300 seconds | Same; checked again before ledger consumption |
 | Replay | Fixed root-owned ledger, exclusive relative creation and fsync | Current-user private local ledger, exclusive descriptor-relative creation and fsync; CLI selects directory because no privileged service exists |
 | Evidence | Signed execution verdict v1 with verifier result | Distinct offline-check/v1 receipt; no verdict or execution claim; external signatures independently verified |
-| Execution | Linux privileged launcher and bounded verifier capture | Absent; no subprocess or network operation in library/CLI |
+| Execution | Linux privileged launcher and bounded verifier capture | Separate bounded offline Go-contract replay runner; live execution fails closed; no subprocess or network operation |
 
 The canonicalizer serializes typed structures into a sorted JSON value before encoding. Only fixed ASCII property names, strings, unsigned integers and booleans are present. No claim is made to implement general RFC 8785 canonical JSON for arbitrary documents or Python arbitrary-precision numbers. Policy input whitespace and property order do not affect signing. Duplicate properties fail parsing rather than silently selecting a value.
 
