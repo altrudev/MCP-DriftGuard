@@ -133,7 +133,7 @@ mod live {
     use super::*;
     use std::{
         fs::File,
-        io::Write,
+        io::{Seek, Write},
         os::fd::{AsRawFd, FromRawFd},
         os::unix::process::CommandExt,
         process::{Command, Stdio},
@@ -174,6 +174,8 @@ mod live {
         {
             return Err(OperationalError::Artifact);
         }
+        // Data options consume the descriptor from its current offset.
+        file.rewind().map_err(|_| OperationalError::Artifact)?;
         Ok(file)
     }
 
@@ -205,6 +207,17 @@ mod live {
             }
         }
         Ok(())
+    }
+
+    #[test]
+    fn data_snapshot_starts_at_zero_and_rejects_mutation() {
+        let mut file = snapshot(b"approved bytes", 0o500).unwrap();
+        assert_eq!(file.stream_position().unwrap(), 0);
+        assert!(file.write_all(b"replacement").is_err());
+        assert!(file.set_len(0).is_err());
+        let mut bytes = Vec::new();
+        file.read_to_end(&mut bytes).unwrap();
+        assert_eq!(bytes, b"approved bytes");
     }
 
     #[test]
@@ -306,11 +319,19 @@ mod live {
                 cmd.args(["--ro-bind", path, path]);
             }
         }
+        // Copy sealed, approved bytes directly from the inherited descriptors.
+        // Unlike --ro-bind-fd, this does not resolve /proc/self/fd after bwrap
+        // has rearranged its mount namespace. Explicit modes are needed because
+        // data mounts do not inherit the source memfd permissions.
         cmd.args([
-            "--ro-bind-fd",
+            "--perms",
+            "0500",
+            "--ro-bind-data",
             &binary.as_raw_fd().to_string(),
             "/verifier",
-            "--ro-bind-fd",
+            "--perms",
+            "0400",
+            "--ro-bind-data",
             &baseline.as_raw_fd().to_string(),
             "/baseline.json",
             "--remount-ro",

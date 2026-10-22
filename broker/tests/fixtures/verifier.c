@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <arpa/inet.h>
 int main(int argc, char **argv) {
     if (argc != 7 || strcmp(argv[1], "verify") || strcmp(argv[2], "--baseline") ||
@@ -12,6 +13,11 @@ int main(int argc, char **argv) {
     if (getenv("HOME") || getenv("PATH") || access("/etc/passwd", F_OK) == 0 ||
         access("/home/ubuntu", F_OK) == 0 || open("/baseline.json", O_WRONLY) >= 0 ||
         open("/verifier", O_WRONLY) >= 0) return 91;
+    struct stat binary_stat, baseline_stat;
+    if (stat("/verifier", &binary_stat) || stat("/baseline.json", &baseline_stat) ||
+        (binary_stat.st_mode & 07777) != 0500 ||
+        (baseline_stat.st_mode & 07777) != 0400 ||
+        chmod("/verifier", 0700) == 0 || chmod("/baseline.json", 0600) == 0) return 94;
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in addr = {.sin_family = AF_INET, .sin_port = htons(8080)};
     inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
