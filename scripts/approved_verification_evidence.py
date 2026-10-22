@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import sys
 from urllib.parse import urlsplit
+from evidence_signatures import verify, sign
 
 
 def main():
@@ -15,11 +16,15 @@ def main():
     ap.add_argument('--binary', required=True)
     ap.add_argument('--endpoint', required=True)
     ap.add_argument('--policy', required=True, help='independently provisioned read-only policy JSON')
+    ap.add_argument('--policy-signature', required=True)
+    ap.add_argument('--approval-public-key', required=True)
+    ap.add_argument('--evidence-private-key', required=True)
     ap.add_argument('--baseline', required=True)
     ap.add_argument('--output', required=True)
     args = ap.parse_args()
     policy_path = Path(args.policy).resolve(strict=True)
     policy = json.loads(policy_path.read_text())
+    verify(policy, args.policy_signature, args.approval_public_key)
     if policy.get('schema') != 'mcpdrift-operator-policy/v1' or set(policy) != {'schema', 'endpoint', 'binary_sha256', 'baseline_sha256'}:
         ap.error('invalid approved policy')
     parsed = urlsplit(args.endpoint)
@@ -49,9 +54,17 @@ def main():
     if digest_before != digest_after:
         raise RuntimeError('baseline changed during verification; evidence refused')
     payload = {'schema':'mcpdrift-operator-evidence/v1','endpoint':args.endpoint,'baseline_sha256':digest_before,'baseline_path':str(baseline),'verifier_binary':str(binary),'verdict':verdict,'exit_code':result.returncode if result else None,'result':data,'error_class':('VERIFIER_ERROR' if result and result.returncode not in (0,1,2) else 'NONE') if result else 'TIMEOUT_OR_MALFORMED_JSON','authorization':'operator-provisioned artifact-digest policy','policy_sha256':hashlib.sha256(policy_path.read_bytes()).hexdigest(),'verifier_sha256':binary_digest,'baseline_modified':False}
+    signed = sign(payload, args.evidence_private_key)
+    signature_output = Path(str(output) + '.sig.json')
+    if signature_output.exists() or signature_output.is_symlink():
+        ap.error('evidence signature output already exists')
     fd = os.open(output, os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
     with os.fdopen(fd,'w') as f:
         json.dump(payload,f,indent=2,sort_keys=True)
+        f.write('\n')
+    signature_fd = os.open(signature_output, os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+    with os.fdopen(signature_fd,'w') as f:
+        json.dump(signed,f,indent=2,sort_keys=True)
         f.write('\n')
     print(json.dumps({'verdict':verdict,'evidence':str(output),'baseline_sha256':digest_before}))
     return 0 if verdict in ('PASS','REVIEW','FAIL') else 1

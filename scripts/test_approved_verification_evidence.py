@@ -2,6 +2,9 @@
 """Operator evidence boundary tests: allowlist, preservation and fail-closed paths."""
 import json
 import hashlib
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives import serialization
+from evidence_signatures import sign, verify
 from pathlib import Path
 import subprocess
 import sys
@@ -19,18 +22,36 @@ class EvidenceTests(unittest.TestCase):
             binary.chmod(0o700)
             baseline = p/'approved.json'
             baseline.write_text('approved')
+            approval_key=Ed25519PrivateKey.generate()
+            evidence_key=Ed25519PrivateKey.generate()
+            def save_key(k,stem):
+                secret=p/(stem+'.pem'); public=p/(stem+'.pub.pem')
+                secret.write_bytes(k.private_bytes(serialization.Encoding.PEM,serialization.PrivateFormat.PKCS8,serialization.NoEncryption()))
+                public.write_bytes(k.public_key().public_bytes(serialization.Encoding.PEM,serialization.PublicFormat.SubjectPublicKeyInfo))
+                return secret,public
+            approval_secret,approval_pub=save_key(approval_key,'approval')
+            evidence_secret,evidence_pub=save_key(evidence_key,'evidence')
             policy = p/'approval.json'
             def seal():
-                policy.write_text(json.dumps({'schema':'mcpdrift-operator-policy/v1','endpoint':'http://127.0.0.1:18787/mcp','binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'baseline_sha256':hashlib.sha256(baseline.read_bytes()).hexdigest()}))
+                doc={'schema':'mcpdrift-operator-policy/v1','endpoint':'http://127.0.0.1:18787/mcp','binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'baseline_sha256':hashlib.sha256(baseline.read_bytes()).hexdigest()}
+                policy.write_text(json.dumps(doc))
+                (p/'approval.sig.json').write_text(json.dumps(sign(doc,approval_secret)))
             seal()
             def run(url,approved,out):
-                return subprocess.run([sys.executable,str(RUNNER),'--binary',str(binary),'--baseline',str(baseline),'--endpoint',url,'--policy',str(policy),'--output',str(out)],capture_output=True,text=True)
+                return subprocess.run([sys.executable,str(RUNNER),'--binary',str(binary),'--baseline',str(baseline),'--endpoint',url,'--policy',str(policy),'--policy-signature',str(p/'approval.sig.json'),'--approval-public-key',str(approval_pub),'--evidence-private-key',str(evidence_secret),'--output',str(out)],capture_output=True,text=True)
             good='http://127.0.0.1:18787/mcp'
             out=p/'evidence.json'
             r=run(good,good,out)
             self.assertEqual(r.returncode,0,r.stderr)
             data=json.loads(out.read_text())
             self.assertEqual(data['verdict'],'PASS')
+            verify(data,str(out)+'.sig.json',evidence_pub)
+            tampered=dict(data,verdict='FAIL')
+            with self.assertRaises(Exception): verify(tampered,str(out)+'.sig.json',evidence_pub)
+            policy.write_text(policy.read_text().replace('18787','18789'))
+            self.assertNotEqual(run(good,good,p/'tampered.json').returncode,0)
+            self.assertFalse((p/'tampered.json').exists())
+            seal()
             self.assertEqual(data['error_class'],'NONE')
             self.assertEqual(baseline.read_text(),'approved')
             self.assertEqual(run(good,good,out).returncode,2) # no overwriting
