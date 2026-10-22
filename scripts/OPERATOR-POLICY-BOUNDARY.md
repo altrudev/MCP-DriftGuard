@@ -1,0 +1,15 @@
+# Experimental operator verification policy
+
+The operator-side evidence adapter requires a separately provisioned JSON file with exactly four fields: `schema` (`mcpdrift-operator-policy/v1`), `endpoint` (an exact approved `http://127.0.0.1` test URL), `binary_sha256` (digest of the approved verifier), and `baseline_sha256` (digest of the approved baseline). The adapter rejects mismatches, a different endpoint, or an existing output path before invoking the verifier. Codex must only read the resulting evidence, not issue approvals or create policies.
+
+**This is local-test hardening, not production authority.** The policy is unsigned and the adapter does not independently authenticate its owner or enforce file permissions, protect against artifact swaps during execution, sandbox the verifier, or cryptographically authenticate the resulting evidence. A malicious caller able to replace the policy can still authorize its own inputs. Production requires independent approver identity, immutable trusted policy storage, code identity pinning at execution, OS isolation, output bounds, authenticated evidence, and external adversarial review. Never run against production or third-party MCP endpoints on the strength of this adapter.
+
+## Signed test fixtures (Ed25519)
+
+The adapter now requires a detached Ed25519 signature over canonical JSON for the operator policy (`--policy-signature` and an independently provisioned `--approval-public-key`). It emits a detached signature for each evidence report (`<output>.sig.json`) using `--evidence-private-key`. The public evidence-verification key must be distributed independently of the report; possession of a signature file alone does not establish trust. Signing keys must remain outside the repository and outside agent-accessible workspaces. This Python test adapter requires the `cryptography` package and does not silently install dependencies.
+
+**Remaining release blockers:** an attacker who can replace the configured public key can substitute policies; an attacker who gains access to the evidence private key can forge evidence. No proof of hardware-backed or separated key custody, replay prevention, trusted timestamp, process confinement, safe artifact file-descriptor pinning, or operational authorization lifecycle is established. This remains an experimental loopback-only adapter, not a production security broker.
+
+## Administrator trust anchor hardening
+
+Approval verification now takes its trusted public key only from `/etc/mcpdrift/trust/operator-approval-ed25519.pub.pem`, not an agent-supplied command-line argument. Missing, symlinked, non-root-owned or group/world-writable trust anchors and ancestor directories fail closed. Unit tests use a mocked test trust anchor; they do not establish that a production administrator has provisioned the real path. The evidence signing private key remains caller-selected and is **not** safe for production custody; the broker is still an experimental loopback fixture. Do not promote to production or merge until key isolation and remaining DDC Radial audit issues are addressed.
