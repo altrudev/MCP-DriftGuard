@@ -11,6 +11,8 @@ import stat
 import re
 import time
 import pwd
+import selectors
+import signal
 from urllib.parse import urlsplit
 from evidence_signatures import verify, sign, canonical
 
@@ -99,6 +101,73 @@ def consume_authorization(policy):
 
 
 
+# Combined raw stdout/stderr budget; neither stream is decoded before capture ends.
+MAX_CAPTURE_BYTES = 1024 * 1024
+VERIFICATION_TIMEOUT = 25
+REAP_TIMEOUT = 1
+
+
+class CaptureFailure(ValueError):
+    """Execution cannot produce trustworthy, bounded evidence."""
+
+
+def bounded_run(command):
+    """Bound memory and pipe waits, including pipes inherited by descendants.
+
+    Cleanup covers the new process group, including after a normal leader exit.
+    Descendants that escape the group require operator-side cgroup containment.
+    Never use communicate(), a Popen context manager, or an unbounded wait here.
+    """
+    deadline = time.monotonic() + VERIFICATION_TIMEOUT
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                               env={'PATH': '/usr/bin:/bin'}, stdin=subprocess.DEVNULL,
+                               close_fds=True, cwd='/', start_new_session=True)
+    selector = selectors.DefaultSelector()
+    stdout = bytearray()
+    captured = 0
+    try:
+        for stream in (process.stdout, process.stderr):
+            os.set_blocking(stream.fileno(), False)
+            selector.register(stream, selectors.EVENT_READ)
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise CaptureFailure('verification deadline exceeded')
+            for key, _ in selector.select(min(remaining, 0.05)):
+                # At most one byte beyond the budget is read to detect overflow.
+                chunk = os.read(key.fd, min(65536, MAX_CAPTURE_BYTES - captured + 1))
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    continue
+                captured += len(chunk)
+                if captured > MAX_CAPTURE_BYTES:
+                    raise CaptureFailure('verification output limit exceeded')
+                if key.fileobj is process.stdout:
+                    stdout.extend(chunk)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise CaptureFailure('verification deadline exceeded')
+        try:
+            code = process.wait(timeout=remaining)
+        except subprocess.TimeoutExpired as exc:
+            raise CaptureFailure('verification deadline exceeded') from exc
+        return subprocess.CompletedProcess(command, code, stdout.decode('utf-8'), '')
+    finally:
+        # Do this even if the leader exited: descendants may still be running.
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        finally:
+            selector.close()
+            process.stdout.close()
+            process.stderr.close()
+            try:
+                process.wait(timeout=REAP_TIMEOUT)
+            except subprocess.TimeoutExpired as exc:
+                raise CaptureFailure('verifier could not be reaped within cleanup deadline') from exc
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--binary', required=True)
@@ -135,21 +204,19 @@ def main():
     consume_authorization(policy)
     command = prefix + [str(binary), 'verify', '--baseline', str(baseline), '--format', 'json', args.endpoint]
     try:
-        result = subprocess.run(command, capture_output=True, text=True, timeout=25, check=False,
-                                env={'PATH':'/usr/bin:/bin'}, stdin=subprocess.DEVNULL,
-                                close_fds=True, cwd='/')
+        result = bounded_run(command)
         verdict = {0:'PASS',1:'REVIEW',2:'FAIL',3:'INCONCLUSIVE',4:'BASELINE_ERROR',5:'INTEGRITY_FAILURE'}.get(result.returncode,'UNEXPECTED_EXIT')
         data = json.loads(result.stdout) if result.stdout.strip() else None
         if not isinstance(data, dict):
             verdict = 'INCONCLUSIVE'
         if result.returncode in (0, 1, 2) and (not isinstance(data, dict) or data.get('match') is not (result.returncode == 0)):
             verdict = 'INCONCLUSIVE'
-    except (subprocess.TimeoutExpired, json.JSONDecodeError) as exc:
+    except (CaptureFailure, UnicodeDecodeError, json.JSONDecodeError):
         verdict, data, result = 'INCONCLUSIVE', None, None
     digest_after = hashlib.sha256(baseline.read_bytes()).hexdigest()
     if digest_before != digest_after:
         raise RuntimeError('baseline changed during verification; evidence refused')
-    payload = {'schema':'mcpdrift-operator-evidence/v1','endpoint':args.endpoint,'baseline_sha256':digest_before,'baseline_path':str(baseline),'verifier_binary':str(binary),'verdict':verdict,'exit_code':result.returncode if result else None,'result':data,'error_class':('VERIFIER_ERROR' if result and result.returncode not in (0,1,2) else 'NONE') if result else 'TIMEOUT_OR_MALFORMED_JSON','authorization':'one-time local signed policy','authorization_id':policy['authorization_id'],'authorization_expires_at':policy['expires_at'],'policy_sha256':hashlib.sha256(canonical(policy)).hexdigest(),'verifier_sha256':binary_digest,'baseline_modified':False}
+    payload = {'schema':'mcpdrift-operator-evidence/v1','endpoint':args.endpoint,'baseline_sha256':digest_before,'baseline_path':str(baseline),'verifier_binary':str(binary),'verdict':verdict,'exit_code':result.returncode if result else None,'result':data,'error_class':('VERIFIER_ERROR' if result and result.returncode not in (0,1,2) else 'NONE') if result else 'CAPTURE_OR_JSON_FAILURE','authorization':'one-time local signed policy','authorization_id':policy['authorization_id'],'authorization_expires_at':policy['expires_at'],'policy_sha256':hashlib.sha256(canonical(policy)).hexdigest(),'verifier_sha256':binary_digest,'baseline_modified':False}
     signed = sign(payload, EVIDENCE_PRIVATE_KEY)
     signature_output = Path(str(output) + '.sig.json')
     if signature_output.exists() or signature_output.is_symlink():
