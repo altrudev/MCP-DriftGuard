@@ -13,6 +13,7 @@ import tempfile
 import time
 import unittest
 import uuid
+from types import SimpleNamespace
 from concurrent.futures import ProcessPoolExecutor
 from unittest.mock import patch
 from cryptography.exceptions import InvalidSignature
@@ -66,19 +67,88 @@ class EvidenceTests(unittest.TestCase):
         self.policy.write_text(json.dumps(self.doc))
         self.signature.write_text(json.dumps(sign(self.doc, self.approval)))
 
-    def run_wrapper(self, name='out', unsafe=None, extra=()):
+    def run_wrapper(self, name='out', unsafe=None, extra=(), real_boundary=False):
         args = ['wrapper', '--binary', str(self.binary), '--baseline', str(self.baseline),
                 '--endpoint', self.doc['endpoint'], '--policy', str(self.policy),
                 '--policy-signature', str(self.signature), '--output', str(self.p/name), *extra]
         # Only fixture paths are admitted; production paths are never opened.
         def custody(path, **kwargs):
             return path in (self.approval_pub, self.evidence, self.ledger) and path != unsafe
+        with contextlib.ExitStack() as stack:
+            if not real_boundary:
+                # Functional fixtures run as this test user, without broker custody.
+                stack.enter_context(patch.object(runner, 'verifier_prefix', return_value=[]))
+            return self.invoke(args, custody)
+
+    def invoke(self, args, custody):
         with patch.object(runner, 'TRUSTED_APPROVAL_KEY', self.approval_pub), \
              patch.object(runner, 'EVIDENCE_PRIVATE_KEY', self.evidence), \
              patch.object(runner, 'CONSUMPTION_LEDGER', self.ledger), \
              patch.object(runner, 'trusted_anchor', side_effect=custody), \
              patch.object(sys, 'argv', args), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             return runner.main()
+
+    def test_unsafe_privilege_boundary_denies_before_execution_or_consumption(self):
+        scenarios = [
+            {'platform': 'darwin'}, {'uid': 1000}, {'euid': 1000},
+            {'trusted': False}, {'executable': False}, {'missing': True},
+            {'account_uid': 0}, {'account_gid': 0},
+        ]
+        for scenario in scenarios:
+            with self.subTest(scenario=scenario), \
+                 patch.object(runner.sys, 'platform', scenario.get('platform', 'linux')), \
+                 patch.object(runner.os, 'getuid', return_value=scenario.get('uid', 0)), \
+                 patch.object(runner.os, 'geteuid', return_value=scenario.get('euid', 0)), \
+                 patch.object(runner.os, 'access', return_value=scenario.get('executable', True)), \
+                 patch.object(runner.pwd, 'getpwnam',
+                              side_effect=KeyError() if scenario.get('missing') else None,
+                              return_value=SimpleNamespace(pw_uid=scenario.get('account_uid', 65001),
+                                                           pw_gid=scenario.get('account_gid', 65001))), \
+                 patch.object(runner.subprocess, 'run') as execute:
+                # The fixture custody allowlist deliberately excludes the launcher.
+                # Override only that decision for scenarios testing other failures.
+                original = runner.verifier_prefix
+                def boundary():
+                    with patch.object(runner, 'trusted_anchor', return_value=scenario.get('trusted', True)):
+                        return original()
+                with patch.object(runner, 'verifier_prefix', side_effect=boundary):
+                    self.assert_denied(real_boundary=True)
+                execute.assert_not_called()
+                self.assertEqual(list(self.ledger.iterdir()), [])
+
+    def test_only_trusted_launcher_receives_root_execution(self):
+        with patch.object(runner.sys, 'platform', 'linux'), \
+             patch.object(runner.os, 'getuid', return_value=0), \
+             patch.object(runner.os, 'geteuid', return_value=0), \
+             patch.object(runner.os, 'access', return_value=True), \
+             patch.object(runner, 'trusted_anchor', return_value=True), \
+             patch.object(runner.pwd, 'getpwnam', return_value=SimpleNamespace(pw_uid=65001, pw_gid=65002)) as lookup:
+            prefix = runner.verifier_prefix()
+        lookup.assert_called_once_with('mcpdrift-verifier')
+        self.assertEqual(prefix, ['/usr/bin/setpriv', '--reuid', '65001', '--regid', '65002',
+                                 '--clear-groups', '--bounding-set=-all', '--inh-caps=-all',
+                                 '--ambient-caps=-all', '--no-new-privs', '--'])
+        with patch.object(runner, 'verifier_prefix', return_value=prefix), \
+             patch.object(runner.subprocess, 'run', side_effect=OSError('launcher unavailable')) as execute:
+            self.assert_denied(real_boundary=True)
+        command = execute.call_args.args[0]
+        self.assertEqual(command[:len(prefix)], prefix)
+        self.assertEqual(command[len(prefix)], str(self.binary))
+        self.assertTrue(execute.call_args.kwargs['close_fds'])
+        self.assertEqual(execute.call_args.kwargs['stdin'], runner.subprocess.DEVNULL)
+        self.assertEqual(execute.call_args.kwargs['cwd'], '/')
+        self.assertTrue((self.ledger/self.doc['authorization_id']).exists())
+
+    def test_launcher_restriction_failure_never_falls_back(self):
+        prefix = ['/usr/bin/setpriv', '--no-new-privs', '--']
+        failure = runner.subprocess.CompletedProcess(prefix, 127, '', 'setpriv: denied')
+        with patch.object(runner, 'verifier_prefix', return_value=prefix), \
+             patch.object(runner.subprocess, 'run', return_value=failure) as execute:
+            self.assertEqual(self.run_wrapper(real_boundary=True), 1)
+        execute.assert_called_once()
+        self.assertEqual(execute.call_args.args[0][:len(prefix)], prefix)
+        self.assertEqual(json.loads((self.p/'out').read_text())['verdict'], 'INCONCLUSIVE')
+        self.assertTrue((self.ledger/self.doc['authorization_id']).exists())
 
     def assert_denied(self, **kwargs):
         with self.assertRaises((SystemExit, ValueError, OSError, InvalidSignature)):

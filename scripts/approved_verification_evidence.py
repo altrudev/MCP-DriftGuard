@@ -10,6 +10,7 @@ import sys
 import stat
 import re
 import time
+import pwd
 from urllib.parse import urlsplit
 from evidence_signatures import verify, sign, canonical
 
@@ -19,6 +20,30 @@ TRUSTED_APPROVAL_KEY = Path("/etc/mcpdrift/trust/operator-approval-ed25519.pub.p
 EVIDENCE_PRIVATE_KEY = Path("/etc/mcpdrift/trust/operator-evidence-ed25519.pem")
 CONSUMPTION_LEDGER = Path("/var/lib/mcpdrift/consumed-authorizations")
 MAX_AUTHORIZATION_SECONDS = 300
+PRIVILEGE_LAUNCHER = Path('/usr/bin/setpriv')
+VERIFIER_ACCOUNT = 'mcpdrift-verifier'
+
+
+def verifier_prefix():
+    """Only a trusted launcher may start with root privileges, never the verifier.
+
+    setpriv fails before exec if any requested restriction cannot be applied.
+    Identity is administrator provisioned, never supplied by policy or caller.
+    """
+    if sys.platform != 'linux' or os.getuid() != 0 or os.geteuid() != 0:
+        raise ValueError('privileged broker requires Linux and real/effective root')
+    if not trusted_anchor(PRIVILEGE_LAUNCHER) or not os.access(PRIVILEGE_LAUNCHER, os.X_OK):
+        raise ValueError('trusted privilege launcher missing or unsafe')
+    try:
+        account = pwd.getpwnam(VERIFIER_ACCOUNT)
+    except KeyError as exc:
+        raise ValueError('dedicated verifier account missing') from exc
+    if account.pw_uid <= 0 or account.pw_gid <= 0:
+        raise ValueError('verifier account must have non-root UID and GID')
+    return [str(PRIVILEGE_LAUNCHER), '--reuid', str(account.pw_uid),
+            '--regid', str(account.pw_gid), '--clear-groups',
+            '--bounding-set=-all', '--inh-caps=-all', '--ambient-caps=-all',
+            '--no-new-privs', '--']
 
 
 def trusted_anchor(path, private=False, directory=False):
@@ -83,6 +108,7 @@ def main():
     ap.add_argument('--baseline', required=True)
     ap.add_argument('--output', required=True)
     args = ap.parse_args()
+    prefix = verifier_prefix()
     policy_path = Path(args.policy).resolve(strict=True)
     policy = json.loads(policy_path.read_text())
     if not trusted_anchor(TRUSTED_APPROVAL_KEY):
@@ -107,9 +133,11 @@ def main():
     if signature_output.exists() or signature_output.is_symlink():
         ap.error('evidence signature output already exists')
     consume_authorization(policy)
-    command = [str(binary), 'verify', '--baseline', str(baseline), '--format', 'json', args.endpoint]
+    command = prefix + [str(binary), 'verify', '--baseline', str(baseline), '--format', 'json', args.endpoint]
     try:
-        result = subprocess.run(command, capture_output=True, text=True, timeout=25, check=False, env={'PATH':'/usr/bin:/bin'})
+        result = subprocess.run(command, capture_output=True, text=True, timeout=25, check=False,
+                                env={'PATH':'/usr/bin:/bin'}, stdin=subprocess.DEVNULL,
+                                close_fds=True, cwd='/')
         verdict = {0:'PASS',1:'REVIEW',2:'FAIL',3:'INCONCLUSIVE',4:'BASELINE_ERROR',5:'INTEGRITY_FAILURE'}.get(result.returncode,'UNEXPECTED_EXIT')
         data = json.loads(result.stdout) if result.stdout.strip() else None
         if not isinstance(data, dict):
