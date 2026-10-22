@@ -22,7 +22,7 @@ def main():
         if build.returncode:raise RuntimeError(build.stderr)
         shutil.copyfile(ROOT/"examples/stdio-fixture/server.py",fixture)
         fixture.chmod(0o700)
-        env=os.environ.copy();env.pop("MCPDRIFT_FIXTURE_DRIFT",None)
+        env=os.environ.copy();env.pop("MCPDRIFT_FIXTURE_DRIFT",None);env.pop("MCPDRIFT_STDIO_ALLOWED_ARGS_JSON",None)
         env["MCPDRIFT_STDIO_ALLOWED_EXEC"]=str(fixture)
         common=["--stdio-exec",fixture]
         baseline=t/"approved.json"
@@ -33,7 +33,12 @@ def main():
             results["inventory"]=tuple(len(snap[x]) for x in ("tools","resources","prompts"))==(1,1,1)
         r=call([exe,"baseline",*common,"--output",baseline,"stdio"],env)
         results["baseline"]=r.returncode
-        before=baseline.read_bytes() if baseline.exists() else b""
+        if r.returncode != 0 or not baseline.is_file():
+            results["baseline_file_present"]=False
+            print(json.dumps(results,indent=2,sort_keys=True))
+            return 1
+        results["baseline_file_present"]=True
+        before=baseline.read_bytes()
         r=call([exe,"verify",*common,"--baseline",baseline,"stdio"],env)
         results["unchanged"]=r.returncode
         (t/"drift.enabled").touch()
@@ -75,7 +80,7 @@ def main():
         results["baseline_unchanged"]=baseline.read_bytes()==before
     expected={"inspect":0,"inventory":True,"baseline":0,"unchanged":0,"drift":2,
               "detected_added_tool":True,"unapproved_executable":3,"bad_args":3,
-              "baseline_unchanged":True,
+              "baseline_unchanged":True,"baseline_file_present":True,
               "--malformed":3,"--wrong-id":3,"--repeated-cursor":3,"--missing-inventory":3,
               "env_secret_isolated":True,"unapproved_args":3}
     if platform.system()=="Linux":expected["linux_descendant_killed"]=True

@@ -131,7 +131,7 @@ func InspectStdio(parent context.Context, binary string, args []string) (snapsho
 				if e := reader.Err(); e != nil {
 					return nil, fmt.Errorf("stdio response: %w", e)
 				}
-				return nil, errors.New("stdio endpoint closed before response")
+				return nil, errors.New("stdio endpoint closed before response (check approved executable, interpreter availability in restricted PATH, and argv; child stderr intentionally withheld)")
 			}
 			line := reader.Bytes()
 			var response struct {
