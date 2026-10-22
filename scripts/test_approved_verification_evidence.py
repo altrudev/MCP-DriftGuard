@@ -38,8 +38,15 @@ class EvidenceTests(unittest.TestCase):
                 (p/'approval.sig.json').write_text(json.dumps(sign(doc,approval_secret)))
             seal()
             def run(url,approved,out):
-                return subprocess.run([sys.executable,str(RUNNER),'--binary',str(binary),'--baseline',str(baseline),'--endpoint',url,'--policy',str(policy),'--policy-signature',str(p/'approval.sig.json'),'--approval-public-key',str(approval_pub),'--evidence-private-key',str(evidence_secret),'--output',str(out)],capture_output=True,text=True)
+                # Positive fixture replaces a protected trust anchor in-process only;
+                # the production CLI must not accept a caller-selected key.
+                harness='import sys;sys.path.insert(0,sys.argv[1]);import approved_verification_evidence as m;from pathlib import Path;m.TRUSTED_APPROVAL_KEY=Path(sys.argv[2]);m.trusted_anchor=lambda p: p==m.TRUSTED_APPROVAL_KEY;sys.argv=[sys.argv[3]]+sys.argv[4:];sys.exit(m.main())'
+                return subprocess.run([sys.executable,'-B','-c',harness,str(RUNNER.parent),str(approval_pub),str(RUNNER),'--binary',str(binary),'--baseline',str(baseline),'--endpoint',url,'--policy',str(policy),'--policy-signature',str(p/'approval.sig.json'),'--evidence-private-key',str(evidence_secret),'--output',str(out)],capture_output=True,text=True)
             good='http://127.0.0.1:18787/mcp'
+            production=subprocess.run([sys.executable,'-B',str(RUNNER),'--binary',str(binary),'--baseline',str(baseline),'--endpoint',good,'--policy',str(policy),'--policy-signature',str(p/'approval.sig.json'),'--evidence-private-key',str(evidence_secret),'--output',str(p/'untrusted.json')],capture_output=True,text=True)
+            self.assertNotEqual(production.returncode,0)
+            self.assertFalse((p/'untrusted.json').exists())
+            self.assertIn('trust anchor',production.stderr)
             out=p/'evidence.json'
             r=run(good,good,out)
             self.assertEqual(r.returncode,0,r.stderr)

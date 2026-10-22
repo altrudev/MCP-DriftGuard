@@ -10,6 +10,18 @@ import sys
 from urllib.parse import urlsplit
 from evidence_signatures import verify, sign
 
+# Administrator-provisioned; never supplied by the invoking agent or policy.
+TRUSTED_APPROVAL_KEY = Path("/etc/mcpdrift/trust/operator-approval-ed25519.pub.pem")
+
+def trusted_anchor(path):
+    try:
+        if path.is_symlink() or not path.is_file():
+            return False
+        return all(part.stat().st_uid == 0 and not (part.stat().st_mode & 0o022) for part in (path, *path.parents))
+    except OSError:
+        return False
+
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -17,14 +29,15 @@ def main():
     ap.add_argument('--endpoint', required=True)
     ap.add_argument('--policy', required=True, help='independently provisioned read-only policy JSON')
     ap.add_argument('--policy-signature', required=True)
-    ap.add_argument('--approval-public-key', required=True)
     ap.add_argument('--evidence-private-key', required=True)
     ap.add_argument('--baseline', required=True)
     ap.add_argument('--output', required=True)
     args = ap.parse_args()
     policy_path = Path(args.policy).resolve(strict=True)
     policy = json.loads(policy_path.read_text())
-    verify(policy, args.policy_signature, args.approval_public_key)
+    if not trusted_anchor(TRUSTED_APPROVAL_KEY):
+        ap.error("administrator approval trust anchor missing or unsafe")
+    verify(policy, args.policy_signature, TRUSTED_APPROVAL_KEY)
     if policy.get('schema') != 'mcpdrift-operator-policy/v1' or set(policy) != {'schema', 'endpoint', 'binary_sha256', 'baseline_sha256'}:
         ap.error('invalid approved policy')
     parsed = urlsplit(args.endpoint)
