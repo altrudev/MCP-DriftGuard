@@ -86,6 +86,11 @@ Operators must establish and test all of the following before production accepta
 - Fixed protected trust roots, a trusted clock, an administrator-pinned durable replay
   ledger, consume-before-launch semantics, and freshness/binding for independently
   signed execution evidence. The replay runner neither consumes an ID nor signs receipts.
+  The Rust `coordinator` API now consumes a validated policy before invoking Bubblewrap
+  and returns an unsigned execution record; an external trusted signer remains separate.
+  Its fixed approval key, system clock and service-selected permanent ledger must be
+  provisioned by the embedding service. Required live tests currently fail on this host
+  because namespace creation is denied; offline skips do not establish live acceptance.
 - Tests under the actual service identity proving filesystem denial, egress denial,
   child cleanup, tamper resistance, overflow handling and timeout behavior. A successful
   `bwrap true` alone is not acceptance. Missing prerequisites must remain operational denial.

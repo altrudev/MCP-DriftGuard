@@ -1,4 +1,5 @@
 //! Experimental offline authorization and constrained verifier replay. No key generation.
+pub mod coordinator;
 pub mod runner;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use ed25519_dalek::{Signature, VerifyingKey};
@@ -27,7 +28,7 @@ pub struct Policy {
     pub issued_at: u64,
     pub expires_at: u64,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Envelope {
     pub algorithm: String,

@@ -20,6 +20,21 @@ The canonicalizer serializes typed structures into a sorted JSON value before en
 
 `tests/fixtures/python-policy.json` was produced with the existing Python `evidence_signatures.canonical` and `cryptography` Ed25519 signer using the public disposable seed `[42;32]`. It includes exact canonical bytes, public key and detached signature. The Rust test compares bytes and verifies that signature. It uses fixed historical timestamps and grants no live authorization. Other tests sign with disposable deterministic test keys and cover independent evidence key verification, tampering, wrong keys, artifact substitution, invalid schemas/types, endpoint confusion, expiry edges, invalid IDs/digests, ledger races, existing marker/symlink denial, unsafe directory mode, and invalid CLI invocations. These are local tests, not privileged host deployment or sandbox validation.
 
-Migration requires external public key format conversion and provisioning, one fixed protected ledger for any future execution service, a distinct execution evidence design, execution confinement and artifact pinning. None of those missing service features is represented as implemented by this offline checker.
+Migration requires external public key format conversion and provisioning, one fixed protected ledger for any future execution service, external execution-record signing and service deployment acceptance. The library coordinator and sealed runner implement consumption ordering and artifact pinning, while the CLI remains an offline checker.
 
-DDC Radial recheck (2026-10-22): forced live namespace acceptance is BLOCKED on this VPS. DRIFTGUARD_REQUIRE_LIVE=1 cargo test --offline --manifest-path broker/Cargo.toml live_namespace_contract -- --nocapture fails because Bubblewrap cannot resolve /proc/self/fd/3 for the sealed executable. Parent PID descriptor paths are denied by the kernel and were not retained. Ordinary tests can pass by skipping unavailable live execution. No signed one-time consumption is wired to this runner, no signed execution receipt is emitted, and the isolated network cannot reach a real MCP target. Do not merge or deploy this live runner until exact required-live acceptance is independently demonstrated.
+Coordinator update (2026-10-22): the Rust library now connects validated signed policy,
+durable exclusive one-time consumption, and the existing Bubblewrap runner. It emits
+an unsigned execution record binding canonical policy digest, ID, observed verdict and
+provenance or operational failure class. External signing remains separate. The CLI
+and Go engine are unchanged. Production construction uses fixed approval key custody
+and the system clock; runner/clock/key injection for coordinator tests is private.
+
+The earlier `/proc/self/fd/3` artifact-delivery failure was addressed by the existing
+sealed data-mount runner. Required live acceptance remains BLOCKED on this host:
+`DRIFTGUARD_REQUIRE_LIVE=1 cargo test --offline --manifest-path broker/Cargo.toml`
+fails because Bubblewrap cannot create the required namespaces (permission denied).
+The separately forced `live_namespace_contract` gate fails for the same reason.
+Ordinary offline tests skip unavailable live execution. Neither that skip nor an
+unsigned failure record demonstrates successful live execution. The isolated network
+still cannot reach a real MCP target. Do not merge or deploy until required-live
+acceptance is independently demonstrated.

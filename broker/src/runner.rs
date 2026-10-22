@@ -1,6 +1,6 @@
 //! Experimental execution boundary. Replay never launches a process.
 use crate::{check, endpoint_valid, Envelope, Policy};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{
     fs::OpenOptions,
     io::Read,
@@ -11,7 +11,7 @@ use std::{
 
 const ARTIFACT_LIMIT: u64 = 64 * 1024 * 1024;
 const CAPTURE_LIMIT: usize = 64 * 1024;
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub enum OperationalError {
     Authorization,
     Artifact,
@@ -22,7 +22,7 @@ pub enum OperationalError {
     Exit(i32),
     IsolationUnavailable,
 }
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub enum Verdict {
     Match,
     Drift { score: u8 },
@@ -36,8 +36,8 @@ pub struct Outcome {
 /// Administrator-selected configuration; no command, shell, arguments or environment input.
 /// Artifact bytes are retained so launch never reopens caller-selected paths.
 pub struct ApprovedVerifier {
-    binary: Vec<u8>,
-    baseline: Vec<u8>,
+    pub(crate) binary: Vec<u8>,
+    pub(crate) baseline: Vec<u8>,
     endpoint: String,
 }
 fn artifact(path: &Path) -> Result<Vec<u8>, OperationalError> {
