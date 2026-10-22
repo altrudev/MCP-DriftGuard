@@ -106,7 +106,7 @@ fn go_contract_verdicts_and_operational_errors() {
     }
 }
 #[test]
-fn tampering_endpoint_expiry_and_live_isolation_deny() {
+fn tampering_endpoint_expiry_and_live_authorization_deny() {
     let d = tempfile::tempdir().unwrap();
     let (a, mut p, s, k) = setup(d.path());
     let r = capture(d.path(), 0, MATCH, "", 0).unwrap();
@@ -132,8 +132,8 @@ fn tampering_endpoint_expiry_and_live_isolation_deny() {
         );
     }
     assert_eq!(
-        BubblewrapRunner.run(&a, &p, &s, &k, 1001),
-        Err(OperationalError::IsolationUnavailable)
+        BubblewrapRunner.run(&a, &p, &s, &k, 1300),
+        Err(OperationalError::Authorization)
     );
     assert!(ApprovedVerifier::load(
         &d.path().join("verifier"),
@@ -159,4 +159,64 @@ fn bounded_streams_deadline_and_nonregular_inputs() {
     assert!(ApprovedVerifier::load(&link, &d.path().join("baseline"), &p.endpoint).is_err());
     assert!(OfflineReplay::load(d.path(), Duration::from_secs(1)).is_err());
     assert!(OfflineReplay::load(&link, Duration::from_secs(1)).is_err());
+}
+
+/// Requires cc and static libc. Set DRIFTGUARD_REQUIRE_LIVE=1 to make unavailable
+/// kernel namespaces a test failure instead of a reported skip.
+#[test]
+#[cfg(target_os = "linux")]
+fn live_namespace_contract() {
+    let d = tempfile::tempdir().unwrap();
+    let binary = d.path().join("live-verifier");
+    assert!(std::process::Command::new("cc")
+        .args(["-static", "-O2", "tests/fixtures/verifier.c", "-o"])
+        .arg(&binary)
+        .status()
+        .unwrap()
+        .success());
+    let bytes = std::fs::read(&binary).unwrap();
+    for (mode, expected) in [
+        (b'm', Ok(Verdict::Match)),
+        (b'd', Ok(Verdict::Drift { score: 5 })),
+        (b'x', Err(OperationalError::Exit(7))),
+        (b'b', Err(OperationalError::Report)),
+        (b'o', Err(OperationalError::Capture)),
+        (b'e', Err(OperationalError::Capture)),
+        (b't', Err(OperationalError::Deadline)),
+    ] {
+        let (_, mut p, _, _) = setup(d.path());
+        std::fs::write(&binary, &bytes).unwrap();
+        std::fs::write(d.path().join("baseline"), [mode]).unwrap();
+        p.binary_sha256 = digest(&bytes);
+        p.baseline_sha256 = digest(&[mode]);
+        let key = SigningKey::from_bytes(&[13; 32]);
+        let s = Envelope {
+            algorithm: "Ed25519".into(),
+            signature: STANDARD.encode(key.sign(&canonical(&p).unwrap()).to_bytes()),
+        };
+        let a = ApprovedVerifier::load(&binary, &d.path().join("baseline"), &p.endpoint).unwrap();
+        // Replacement after load cannot change the authorized launch snapshots.
+        std::fs::write(&binary, b"replaced").unwrap();
+        std::fs::write(d.path().join("baseline"), b"replaced").unwrap();
+        assert_eq!(
+            BubblewrapRunner.run(&a, &p, &s, &key.verifying_key().to_bytes(), 1300),
+            Err(OperationalError::Authorization)
+        );
+        let out = BubblewrapRunner.run(&a, &p, &s, &key.verifying_key().to_bytes(), 1001);
+        if mode == b'm' && out == Err(OperationalError::IsolationUnavailable) {
+            assert!(
+                std::env::var_os("DRIFTGUARD_REQUIRE_LIVE").is_none(),
+                "live namespaces required but unavailable"
+            );
+            eprintln!("SKIP live execution: Bubblewrap namespaces unavailable");
+            return;
+        }
+        match out {
+            Ok(out) => {
+                assert_eq!(Ok(out.verdict), expected);
+                assert_eq!(out.provenance, "bubblewrap-live/v1");
+            }
+            Err(err) => assert_eq!(Err(err), expected),
+        }
+    }
 }

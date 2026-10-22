@@ -4,14 +4,15 @@
 
 The experimental Rust broker now exposes `runner::ApprovedVerifier` and a separate
 `ExecutionRunner` interface. `OfflineReplay` exercises the existing Go verify JSON
-contract without executing any program or contacting any server. `BubblewrapRunner`
-always returns `IsolationUnavailable`. There is no live execution CLI or direct
+contract without executing any program or contacting any server. `BubblewrapRunner` launches retained, authorized bytes using sealed Linux memfds,
+read-only artifact mounts, runtime library mounts, and new user, PID, IPC, mount,
+UTS and network namespaces. Missing isolation returns an operational error. There is no live execution CLI or direct
 execution fallback. Existing offline authorization commands remain available.
 The Go core is unchanged. This is an adapter experiment, not a production deployment.
 
 A live Bubblewrap probe in this workspace, running as UID 1000, failed with
 “No permissions to create a new namespace”. Merely finding `/usr/bin/bwrap` is
-insufficient. No verifier was launched. No private keys were read or generated.
+insufficient. No verifier was launched in this session. No private keys were read or generated.
 
 ## Adapter contract
 
@@ -25,7 +26,7 @@ Load the two artifacts with `ApprovedVerifier::load`, then call an execution run
 with the policy, detached approval signature, public key and trusted current time.
 The library reads bounded regular files with final-component symlink rejection and
 retains artifact bytes. `authorize` verifies the signature, expiry, endpoint and both
-SHA-256 digests. The planned namespace invocation is exactly:
+SHA-256 digests. The namespace invocation is exactly:
 
 ```
 /verifier verify --baseline /baseline.json --format json APPROVED_ENDPOINT
@@ -55,9 +56,18 @@ Never feed replay results to a production authorization gate as live verificatio
 
 ## Security boundary and operator acceptance
 
-Live execution remains unavailable even on another host until an implementation is
-reviewed and accepted. Operators must establish and test all of the following before
-replacing the fail-closed runner:
+The live runner is an experimental library API, with no CLI wiring, endpoint relay,
+ledger consumption or signing. It clears the environment, refuses effective UID 0,
+drops capabilities, sets no-new-privileges, and mounts no host root or home. It
+allows only `/usr/lib`, `/usr/lib64`, `/lib`, and `/lib64` where available for runtime
+loading, plus private proc, dev and temporary mounts. Each output stream is bounded
+to 64 KiB and drained concurrently with a fixed two-second capture deadline. Cleanup
+kills the process group and Bubblewrap PID namespace, with a one-second reap bound.
+It never retries with host networking or direct execution. Isolated loopback cannot
+reach an approved host endpoint; actual Go discovery therefore remains operationally
+unavailable until a restricted relay is designed.
+
+Operators must establish and test all of the following before production acceptance:
 
 - A dedicated non-root identity, with real/effective/saved IDs and supplementary
   groups checked, no capabilities, no privilege escalation, and no inherited secrets.
@@ -68,7 +78,7 @@ replacing the fail-closed runner:
 - An allowlisted minimal filesystem containing only immutable, digest-checked
   executable and baseline snapshots and required runtime files. No host root, home,
   private keys, credentials, sockets or writable executable mounts. Preserve exact
-  verified bytes across launch; this offline loader is not a secure executable launcher.
+  verified bytes across launch; the live runner seals retained snapshots before launch.
 - Explicit narrowly scoped connectivity to the approved endpoint. An isolated network
   namespace cannot reach the host loopback server automatically. Sharing host networking
   defeats that boundary; design and accept a restricted relay instead. Account for Go
@@ -110,4 +120,12 @@ Run `cargo test --offline --manifest-path broker/Cargo.toml` and
 `cargo clippy --offline --manifest-path broker/Cargo.toml --all-targets -- -D warnings`.
 Disposable fixtures cover match/drift/operational exits, report corruption, artifact
 substitution, endpoint mismatch, expiry, capture overflow, timeout and symlink denial.
-These tests execute no verifier, use no network, and grant no production authority.
+The live test compiles a disposable static C verifier using `cc -static` and checks
+fixed arguments, environment and filesystem denial, sealed snapshot replacement,
+loopback denial, match/drift, malformed reports, operational exits, both stream
+overflows and a timeout with a detached descendant. It reports a skip when the
+kernel denies namespaces; use `DRIFTGUARD_REQUIRE_LIVE=1 cargo test --offline
+--manifest-path broker/Cargo.toml live_namespace_contract -- --nocapture` to require
+live execution on a namespace-enabled test host. No production authority is granted.
+Resource quotas, dedicated identity enforcement beyond rejecting root, restricted
+egress relay and deployment acceptance remain unimplemented.
