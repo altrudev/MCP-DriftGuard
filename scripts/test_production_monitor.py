@@ -221,7 +221,8 @@ class ReleaseTests(unittest.TestCase):
             self.assertFalse(result['activated'])
             self.assertFalse((root/'config/approved-monitor.json').exists())
             self.assertFalse(json.loads((root/'config/monitor.example.json').read_text())['approved'])
-            self.assertIn('--alert-config', (root/'units/mcp-driftguard-monitor.service').read_text())
+            self.assertNotIn('--alert-config', (root/'units/mcp-driftguard-monitor.service').read_text())
+            self.assertTrue((root/'release/local_notifications.py').is_file())
             with self.assertRaises(ValueError):
                 installer.install(binary, root/'release', root/'config', root/'state', root/'units')
 

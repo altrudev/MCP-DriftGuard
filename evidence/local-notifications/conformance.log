@@ -1,0 +1,9 @@
+local_notifications PASS
+production_monitor PASS
+go_unit FAIL
+go_race FAIL
+go_vet PASS
+docs PASS
+http_acceptance FAIL
+stdio_acceptance PASS
+extreme_limits PASS

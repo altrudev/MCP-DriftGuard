@@ -5,6 +5,8 @@ from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
 SUITES=[
+ ("local_notifications",[sys.executable,"-m","unittest","discover","-s","scripts","-p","test_local_notifications.py"]),
+ ("production_monitor",[sys.executable,"-m","unittest","discover","-s","scripts","-p","test_production_monitor.py"]),
  ("go_unit",["go","test","./..."]),
  ("go_race",["go","test","-race","./..."]),
  ("go_vet",["go","vet","./..."]),

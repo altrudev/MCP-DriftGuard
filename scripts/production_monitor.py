@@ -13,6 +13,7 @@ import sqlite3
 import subprocess
 import tempfile
 import time
+from local_notifications import notify
 
 ENDPOINT = 'http://127.0.0.1:8765/mcp'
 ACTIONS = {'healthy': 'Recovered; retain approved trust configuration.',
@@ -133,11 +134,43 @@ def deliver(db, config, tmp):
                             '(select event_id from delivered)').fetchone()[0] == 0
 
 
+def pending_events(db):
+    with closing(sqlite3.connect(db, timeout=5)) as conn, conn:
+        conn.execute('create table if not exists delivered (event_id integer primary key)')
+        return [dict(zip(('id', 'time', 'status', 'detail', 'action'), row)) for row in
+                conn.execute('select id,time,status,detail,action from events where alert=1 '
+                             'and id not in (select event_id from delivered) order by id limit 10')]
+
+
+def deliver_local(db):
+    deadline = time.monotonic() + 20
+    for event in pending_events(db):
+        if time.monotonic() + 5 > deadline or not notify(event):
+            return False
+        with closing(sqlite3.connect(db, timeout=5)) as conn, conn:
+            conn.execute('PRAGMA synchronous=FULL')
+            conn.execute('insert into delivered values(?)', (event['id'],))
+    return not pending_events(db)
+
+
+def notification_result(db, mode):
+    if mode == 'off':
+        return {'delivery': 'disabled', 'host_push': False}
+    if mode == 'agent':
+        return {'delivery': 'action_required' if pending_events(db) else 'idle',
+                'host_push': False, 'events': pending_events(db),
+                'action': 'Present these events to the user; do not adopt a replacement baseline.'}
+    return {'delivery': 'delivered' if deliver_local(db) else 'pending',
+            'host_push': False, 'scope': 'local OS submission only; visibility is not confirmed'}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--state-dir', type=Path, required=True)
     parser.add_argument('--alert-config', type=Path, help='operator-controlled command receiver config')
+    parser.add_argument('--notifications', choices=('local', 'agent', 'off'), default='local',
+                        help='local desktop (default), structured agent result, or opt out')
     args = parser.parse_args()
     os.umask(0o077)
     args.state_dir.mkdir(parents=True, exist_ok=True)
@@ -159,8 +192,9 @@ def main():
         except (OSError, ValueError) as exc:
             status, detail = 'error', 'configuration: ' + str(exc)[:300]
         record(args.state_dir / 'monitor.sqlite3', status, detail)
-        delivery = 'unconfigured'
-        if args.alert_config is not None:
+        notification = notification_result(args.state_dir / 'monitor.sqlite3', args.notifications) if args.alert_config is None or args.notifications != 'local' else {}
+        delivery = notification.get('delivery', 'pending')
+        if args.alert_config is not None and args.notifications == 'local':
             try:
                 if args.alert_config.stat().st_size > 65536:
                     raise ValueError('alert configuration exceeds 64 KiB')
@@ -168,7 +202,7 @@ def main():
             except (OSError, ValueError, sqlite3.Error):
                 delivery = 'pending'
         print(json.dumps({'status': status, 'detail': detail, 'action': ACTIONS[status],
-                          'delivery': delivery}))
+                          'delivery': delivery, 'notification': notification}))
         return 0 if status == 'healthy' and delivery != 'pending' else 1
 
 if __name__ == '__main__':

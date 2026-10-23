@@ -123,7 +123,31 @@ func Serve(in io.Reader, out io.Writer, version string, call func(string) (any, 
 								text = string(b)
 							}
 						}
-						result = map[string]any{"content": []any{map[string]any{"type": "text", "text": text}}, "isError": err != nil}
+						status, action := "inspection", "Review the observed surface; inspection does not establish baseline trust."
+						if name == "driftguard_verify" {
+							status, action = "error", "Verification is inconclusive; check the approved baseline, trusted key and endpoint."
+							if err == nil {
+								var evidence struct {
+									Match *bool `json:"match"`
+								}
+								if json.Unmarshal([]byte(text), &evidence) == nil && evidence.Match != nil {
+									if *evidence.Match {
+										status, action = "healthy", "Surface matches; retain approved trust configuration. Recovery requires prior drift evidence."
+									} else {
+										status, action = "drift", "Investigate changes; independent authority must review any replacement baseline."
+									}
+								}
+							}
+						} else if err != nil {
+							status, action = "error", "Inspection is inconclusive; check operator configuration and endpoint availability."
+						}
+						structured := map[string]any{"notification": map[string]any{
+							"status": status, "action": action, "delivery": "agent_result",
+							"host_push": false, "scope": "Return to the requesting agent; no unsolicited host push or durable acknowledgement."}}
+						if err == nil {
+							structured["evidence"] = value
+						}
+						result = map[string]any{"content": []any{map[string]any{"type": "text", "text": text}}, "structuredContent": structured, "isError": err != nil}
 					case "resources/list":
 						result = map[string]any{"resources": []any{map[string]any{"uri": "driftguard://policy", "name": "DriftGuard operating policy", "mimeType": "text/plain"}}}
 					case "resources/read":

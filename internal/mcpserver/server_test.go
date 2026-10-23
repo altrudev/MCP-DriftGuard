@@ -98,3 +98,43 @@ func TestInvalidParamsPing(t *testing.T) {
 		t.Fatal(out.String())
 	}
 }
+
+func TestActionableNotificationResult(t *testing.T) {
+	for _, tc := range []struct {
+		value  any
+		err    error
+		status string
+	}{
+		{map[string]any{"match": false}, nil, "drift"},
+		{map[string]any{"match": true}, nil, "healthy"},
+		{nil, errors.New("private"), "error"},
+	} {
+		input := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}
+{"jsonrpc":"2.0","method":"notifications/initialized"}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"driftguard_verify","arguments":{}}}
+`
+		var out bytes.Buffer
+		if err := Serve(strings.NewReader(input), &out, "test", func(string) (any, error) { return tc.value, tc.err }); err != nil {
+			t.Fatal(err)
+		}
+		lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+		var response struct {
+			Result struct {
+				StructuredContent struct {
+					Notification struct {
+						Status   string
+						HostPush bool `json:"host_push"`
+						Action   string
+					}
+				}
+			}
+		}
+		if err := json.Unmarshal([]byte(lines[1]), &response); err != nil {
+			t.Fatal(err)
+		}
+		n := response.Result.StructuredContent.Notification
+		if n.Status != tc.status || n.HostPush || n.Action == "" {
+			t.Fatalf("invalid notification: %+v", n)
+		}
+	}
+}

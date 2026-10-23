@@ -49,14 +49,40 @@ Never place private signing keys in the monitor installation.
 
 ## Alert delivery and retry
 
-Create `alerts.json` from `alerts.example.json` after reviewing the receiver.
+Direct customer-local desktop delivery is the default: no remote service, account,
+receiver or credentials are required. Linux uses `notify-send` when installed and
+`DBUS_SESSION_BUS_ADDRESS` identifies the logged-in user's desktop session. Run
+under that user; a systemd user manager may need the desktop environment imported
+by the login session. Never invent another user's bus address. Missing capability,
+headless sessions, nonzero adapter exits and timeouts leave events pending.
+The portable adapter also supports macOS `osascript` and Windows PowerShell
+NotifyIcon in an interactive session. Their real desktop behavior requires testing
+on those operating systems; the monitor/systemd installation is Linux/POSIX.
+OS submission success does not establish that the user saw the notification;
+permissions, focus modes and desktop policy may hide it. Event content is bounded
+and passed as data, never interpolated into shell, AppleScript or PowerShell code.
+
+Use `--notifications off` to opt out of delivery while preserving the journal and
+pending events. Use `--notifications agent` to return up to ten pending actionable
+events as JSON with `host_push: false`, without desktop delivery or acknowledgement.
+These explicit modes override `--alert-config`. Repeated agent reads preserve the
+same pending events. Agent hosts decide how to present them; this is not unsolicited
+host push. `mcpdrift serve` also returns actionable `structuredContent.notification`
+with verification evidence; it is stateless and cannot infer recovery on its own.
+
+A headless VPS cannot reach the customer's laptop or phone unaided. Run the monitor
+on the customer's desktop for local notifications, or explicitly configure an
+external receiver/bridge for remote delivery. A VPS journal is not customer receipt.
+
+To choose an optional external receiver, create `alerts.json` from
+`alerts.example.json` and explicitly pass `--alert-config /absolute/path/alerts.json`
+(manually edit the staged user unit if needed). This replaces local delivery.
 Its `command` is an argv array whose first item is an absolute executable path.
 No shell is used. The receiver gets one JSON event on stdin containing `id`,
 `time` (Unix seconds), `status`, `detail`, and `action`; it must exit zero only after
-durable acceptance. Use a reviewed receiver to route to the operator's chosen
-notification service. No external recipient or credentials are configured here.
-Only PATH and a state-local TMPDIR are passed; load receiver credentials from a
-protected file if necessary. Receiver output is discarded and capped at 1 MiB.
+durable acceptance. Only PATH and a state-local TMPDIR are passed. Receiver output
+is discarded and capped at 1 MiB. The administrator-managed system service retains
+its explicit external receiver, since its isolated user has no customer desktop.
 
 SQLite is the durable outbox. Initial drift/error, changes between error and drift,
 and recovery produce alert rows. Repeated status and initial health do not alert.
@@ -67,12 +93,12 @@ fails the service. A receiver crash or failure after accepting an event can caus
 a duplicate: delivery is at least once. Deduplicate by event ID within this
 installation's database; IDs can repeat in another installation or after database
 replacement. Keep the database and its backup to preserve history and deduplication.
-A missing/invalid receiver config leaves alerts pending. Without `--alert-config`,
-the monitor explicitly reports `delivery: unconfigured` and operates journal-only.
-The installed user/system services require alert config, so missing delivery cannot
-silently count as successful service execution.
+A missing/invalid explicit receiver config leaves delivery pending. Native delivery
+uses the same acknowledgements, retry order and bounds. Switching delivery methods
+does not replay previously acknowledged events. Pending local delivery fails the
+service; an empty outbox requires no desktop. Opt-out leaves pending events intact.
 
-After independent approval and receiver testing, an operator can run a single check:
+After independent approval and local desktop or receiver testing, an operator can run a single check:
 
 ```sh
 systemctl --user daemon-reload
@@ -104,7 +130,7 @@ Child process groups are killed after success/failure/timeout; descendants that
 escape into another session require cgroup containment. This is resource bounding,
 not a complete sandbox. Manual execution lacks the service's total memory cap.
 
-Exit 0 means healthy with no configured delivery pending; exit 1 means drift,
+Exit 0 means healthy with no failed delivery (including explicit opt-out or agent mode); exit 1 means drift,
 verification error or delivery failure. JSON distinguishes those states. Verifier
 codes 1/2 mean drift; other nonzero codes mean error. A bad signature, missing
 approval or changed artifact cannot become healthy. For drift, investigate and
@@ -128,5 +154,5 @@ Socket-restricted environments skip that last test; a skipped test does not
 establish production network acceptance. Hosted CI runs the suite on Linux.
 Remaining gates: authenticated production trust key and baseline; independently
 reproduced signed-verifier/network tests; real systemd/cgroup user-manager execution;
-and receipt by the chosen external notification service. No production-ready or
+and visible receipt on the chosen desktop or optional external receiver. No production-ready or
 independent security certification claim is made.

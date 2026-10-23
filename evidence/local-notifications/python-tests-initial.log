@@ -1,0 +1,19 @@
+artifact mutation tests PASS
+......................s....ssss.............cmd/mcpdrift/main.go:16:2: open /home/ubuntu/.cache/go-build/84/84810ee0116e09bfa683766b79b47e6ddf1de862309519889f4d02acfd92e6a9-a: read-only file system
+E.................
+======================================================================
+ERROR: test_real_verifier_drift_down_bad_key_recovery (test_production_monitor.MonitorTests.test_real_verifier_drift_down_bad_key_recovery)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ubuntu/guardian-v030-repair/scripts/test_production_monitor.py", line 37, in test_real_verifier_drift_down_bad_key_recovery
+    subprocess.run(['go', 'build', '-o', str(target), source], cwd=repo, check=True, timeout=120)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['go', 'build', '-o', '/tmp/tmp1c600191/verify', './cmd/mcpdrift']' returned non-zero exit status 1.
+
+----------------------------------------------------------------------
+Ran 62 tests in 2.038s
+
+FAILED (errors=1, skipped=5)

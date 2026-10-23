@@ -298,3 +298,9 @@ For one-shot, read-only monitoring of the existing Frequency Conduit endpoint,
 see [Production monitor operations](docs/PRODUCTION-MONITOR.md). Activation
 requires an independently approved signed baseline and external public trust key;
 the supplied hourly systemd timer is disabled by default.
+
+Customer-local monitor alerts use native desktop notifications by default, with a
+retryable SQLite drift/recovery journal and no remote service required. Agent mode
+returns structured actionable results without claiming unsolicited host push.
+A headless VPS cannot reach a customer device unaided. See
+[monitor setup and notification options](docs/PRODUCTION-MONITOR.md).

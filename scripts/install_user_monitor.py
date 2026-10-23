@@ -20,7 +20,8 @@ def install(binary, prefix, config, state, units):
         raise ValueError('binary must be an existing executable')
     # Never overwrite an installed release or operator configuration implicitly.
     targets = [prefix/'mcpdrift', prefix/'production_monitor.py',
-               units/'mcp-driftguard-monitor.service', units/'mcp-driftguard-monitor.timer']
+               units/'mcp-driftguard-monitor.service', units/'mcp-driftguard-monitor.timer',
+               prefix/'local_notifications.py']
     if any(p.exists() or p.is_symlink() for p in targets):
         raise ValueError('installation already exists; stage an upgrade in a fresh prefix/unit directory')
     for directory in (prefix, config, state, units):
@@ -28,6 +29,7 @@ def install(binary, prefix, config, state, units):
     os.chmod(state, 0o700)
     shutil.copy2(binary, targets[0])
     shutil.copy2(Path(__file__).with_name('production_monitor.py'), targets[1])
+    shutil.copy2(Path(__file__).with_name('local_notifications.py'), targets[4])
     example = config/'monitor.example.json'
     if not example.exists():
         example.write_text(json.dumps({'approved': False, 'binary': str(targets[0]),
@@ -51,8 +53,7 @@ CPUQuota=50%
 TimeoutStartSec=90
 Environment=PYTHONDONTWRITEBYTECODE=1
 ExecStart=''' + ' '.join([unit_quote(sys.executable), unit_quote(targets[1]),
-        '--config', unit_quote(config/'approved-monitor.json'), '--state-dir', unit_quote(state),
-        '--alert-config', unit_quote(config/'alerts.json')]) + '\n')
+        '--config', unit_quote(config/'approved-monitor.json'), '--state-dir', unit_quote(state)]) + '\n')
     targets[3].write_text('''[Unit]
 Description=Hourly approved DriftGuard user monitoring
 
