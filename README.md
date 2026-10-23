@@ -73,6 +73,18 @@ structural + authority diff
 PASS / REVIEW / FAIL
 ```
 
+## Install as an agent skill (Skills.sh)
+
+Skills.sh discovers the public `mcp-driftguard` skill in this repository. Install it into a compatible agent with:
+
+```bash
+npx skills add altrudev/MCP-DriftGuard --skill mcp-driftguard
+```
+
+The interactive installer selects agent and installation scope. On a shared machine, review the selected scope before confirming. **Installing the skill provides agent instructions, not the `mcpdrift` verifier executable.** Build or install the trusted CLI separately using [INSTALL.md](INSTALL.md), then confirm `mcpdrift version` works before asking an agent to inspect an authorized endpoint. Do not send credentials to the installer or approve new baselines automatically.
+
+Independent testers: follow [the disposable-fixture protocol](skills/mcp-driftguard/EXTERNAL-TESTER.md). For the CI Action, see [the signed-baseline workflow example](ACTION-QUICKSTART.md) and the [stable v1.0.0 release](https://github.com/altrudev/MCP-DriftGuard/releases/tag/v1.0.0).
+
 ## Install from source
 
 For prerequisites, Windows guidance, trusted installation, candidate baseline approval, experimental local stdio transport and agent-skill setup see [INSTALL.md](INSTALL.md).
