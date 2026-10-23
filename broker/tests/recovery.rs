@@ -39,3 +39,24 @@ fn quorum_and_negative_cases() {
     r["nonce_hex"] = json!(hex::encode([0; 32]));
     assert!(verify(&policy, &serde_json::to_vec(&r).unwrap(), 1000).is_err());
 }
+
+#[cfg(unix)]
+#[test]
+fn durable_one_use_nonce_rejects_replay_and_unsafe_ledger() {
+    use std::os::unix::fs::PermissionsExt;
+    let (policy, req) = fixture();
+    assert!(verify(&policy, &req, 1000).is_ok());
+    let base = tempfile::tempdir().unwrap();
+    let ledger = base.path().join("ledger");
+    std::fs::create_dir(&ledger).unwrap();
+    std::fs::set_permissions(&ledger, std::fs::Permissions::from_mode(0o700)).unwrap();
+    assert!(driftguard_broker::recovery::consume_nonce(&ledger, &req).is_ok());
+    assert!(driftguard_broker::recovery::consume_nonce(&ledger, &req).is_err());
+    let unsafe_ledger = base.path().join("unsafe");
+    std::fs::create_dir(&unsafe_ledger).unwrap();
+    std::fs::set_permissions(&unsafe_ledger, std::fs::Permissions::from_mode(0o777)).unwrap();
+    assert!(driftguard_broker::recovery::consume_nonce(&unsafe_ledger, &req).is_err());
+    let fake = base.path().join("link");
+    std::os::unix::fs::symlink(&ledger, &fake).unwrap();
+    assert!(driftguard_broker::recovery::consume_nonce(&fake, &req).is_err());
+}

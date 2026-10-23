@@ -119,3 +119,42 @@ pub fn verify(
 pub fn request_fingerprint(request_json: &[u8]) -> String {
     hex::encode(Sha256::digest(request_json))
 }
+
+/// Burn a verified nonce in an operator-owned, private, persistent ledger.
+/// On uncertainty or any filesystem error, refuse recovery authorization.
+#[cfg(unix)]
+pub fn consume_nonce(ledger: &std::path::Path, request_json: &[u8]) -> Result<(), String> {
+    use std::fs::{self, OpenOptions};
+    use std::io::Write;
+    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+    let request: RecoveryRequest =
+        serde_json::from_slice(request_json).map_err(|e| e.to_string())?;
+    let nonce = decode_fixed::<32>(&request.nonce_hex)?;
+    let metadata = fs::symlink_metadata(ledger).map_err(|e| format!("ledger unavailable: {e}"))?;
+    if !metadata.file_type().is_dir() || metadata.permissions().mode() & 0o077 != 0 {
+        return Err("ledger must be a private real directory (mode 0700)".into());
+    }
+    let name = hex::encode(Sha256::digest(
+        [
+            b"frequency-guardian/consumed-nonce/v1\0".as_slice(),
+            nonce.as_slice(),
+        ]
+        .concat(),
+    ));
+    let path = ledger.join(name);
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(&path)
+        .map_err(|e| format!("nonce already consumed or ledger unavailable: {e}"))?;
+    // A failed write also consumes the name; refusing is safer than replay.
+    file.write_all(b"consumed\n")
+        .map_err(|e| format!("ledger write failed: {e}"))?;
+    file.sync_all()
+        .map_err(|e| format!("ledger sync failed: {e}"))?;
+    fs::File::open(ledger)
+        .and_then(|f| f.sync_all())
+        .map_err(|e| format!("ledger directory sync failed: {e}"))?;
+    Ok(())
+}

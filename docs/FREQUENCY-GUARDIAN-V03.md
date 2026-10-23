@@ -43,3 +43,5 @@ StrongBox and TEE devices, cancel/background authentication, export JSON through
 a document receiver, check API 30 pending behavior, compare repeated identity
 runs, and install v0.3 over v0.2 with the same APK certificate before comparing
 SPKI. Actual update and recovery readiness remain pending, even if local tests pass.
+
+JSON export correction: diagnostics, public pairing, attestation and nonsecret settings now use Android ACTION_CREATE_DOCUMENT (`application/json`) to save a named JSON file to the user-selected destination. No Sharesheet or clipboard is needed for JSON. Destination cancellation does not save; failed writes are reported rather than assumed successful.

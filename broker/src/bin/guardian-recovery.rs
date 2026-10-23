@@ -9,8 +9,8 @@ fn bounded(path: &str, limit: u64) -> Result<Vec<u8>, Box<dyn std::error::Error>
 }
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() != 3 {
-        return Err("usage: guardian-recovery POLICY.json REQUEST.json (offline verification only; no device recovery)".into());
+    if args.len() != 4 {
+        return Err("usage: guardian-recovery POLICY.json REQUEST.json PRIVATE_NONCE_LEDGER_DIRECTORY (offline verification only; no device recovery)".into());
     }
     let policy = bounded(&args[1], 8192)?;
     let request = bounded(&args[2], 16384)?;
@@ -18,6 +18,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         .duration_since(std::time::UNIX_EPOCH)?
         .as_secs();
     let verdict = driftguard_broker::recovery::verify(&policy, &request, now)?;
+    #[cfg(unix)]
+    driftguard_broker::recovery::consume_nonce(std::path::Path::new(&args[3]), &request)?;
+    #[cfg(not(unix))]
+    return Err("durable nonce ledger is currently supported on Unix only".into());
     println!("{}", serde_json::to_string_pretty(&verdict)?);
     Ok(())
 }

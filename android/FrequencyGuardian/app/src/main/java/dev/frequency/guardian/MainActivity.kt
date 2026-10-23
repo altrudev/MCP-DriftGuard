@@ -24,6 +24,7 @@ class MainActivity : Activity() {
     private var activeFixture: LocalFixture? = null
     private var diagnostics: DiagnosticsReport? = null
     private var diagnosticView: TextView? = null
+    private var pendingExport: ByteArray? = null
     private fun refreshDiagnostics() { diagnosticView?.text = diagnostics?.summary() ?: "Run diagnostics to collect evidence." }
     private fun runAllDiagnostics() {
         check(activeFixture == null) { "Authentication already pending" }
@@ -100,22 +101,16 @@ class MainActivity : Activity() {
         diagnosticView = TextView(this).apply { textSize = 15f; setTextIsSelectable(true) }
         column.addView(diagnosticView)
         refreshDiagnostics()
-        button("Export diagnostics JSON") {
+        button("Save diagnostics JSON") {
             val report = diagnostics ?: error("Run All Diagnostics first")
-            java.io.File(cacheDir, "diagnostics.json").writeText(report.json())
-            val uri = Uri.parse("content://$packageName.settings/diagnostics.json")
-            startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                type = "application/json"; putExtra(Intent.EXTRA_STREAM, uri)
-                clipData = ClipData.newRawUri("Diagnostic results", uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }, "Export diagnostic report (public observations only)"))
+            saveJson("frequency-guardian-diagnostics.json", report.json())
         }
         guarded {
             identity.provision()
             label(identity.status())
             label("Public key SHA-256 (SPKI)\n${identity.fingerprint()}")
             button("Copy diagnostic pairing payload") { copy(identity.pairing()) }
-            button("Share diagnostic pairing payload") { shareText(identity.pairing()) }
+            button("Save pairing JSON") { saveJson("frequency-guardian-pairing.json", identity.pairing()) }
             button("Review local signing diagnostic") { review() }
         }
         label("Attestation candidate: separate P-256 key; no trust or enrollment is enabled.")
@@ -133,11 +128,11 @@ class MainActivity : Activity() {
                     toast("Diagnostic candidate generated; unverified and not enrolled")
                 } }.show()
         }
-        button("Export diagnostic certificate chain") {
-            AlertDialog.Builder(this).setTitle("Share public attestation evidence?")
-                .setMessage("Certificates can contain identifying device, application and hardware metadata. Share only with a trusted offline reviewer. Export contains public certificates only, no private key, credentials or settings. This does not enroll or trust the device.")
-                .setNegativeButton("Cancel", null).setPositiveButton("Share diagnostic chain") { _, _ -> guarded {
-                    shareText(DiagnosticAttestation(this).export())
+        button("Save attestation JSON") {
+            AlertDialog.Builder(this).setTitle("Save public attestation evidence?")
+                .setMessage("Certificates may contain identifying device and application metadata. Save only to a trusted location. This does not enroll or trust the device.")
+                .setNegativeButton("Cancel", null).setPositiveButton("Save JSON") { _, _ -> guarded {
+                    saveJson("frequency-guardian-attestation.json", DiagnosticAttestation(this).export())
                 } }.show()
         }
         button("Theme: ${settings.getString("theme", "system")}") {
@@ -212,19 +207,43 @@ class MainActivity : Activity() {
         }
         activeFixture = null; cancellation?.cancel(); cancellation = null; super.onStop()
     }
+    private fun saveJson(filename: String, payload: String) {
+        check(pendingExport == null) { "Finish the previous export first" }
+        val bytes = payload.toByteArray(Charsets.UTF_8)
+        require(bytes.size <= 70000) { "JSON export exceeds safety limit" }
+        JSONObject(payload) // refuse malformed JSON before creating a document
+        pendingExport = bytes
+        try {
+            startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "application/json"
+                putExtra(Intent.EXTRA_TITLE, filename)
+            }, 2)
+        } catch (e: Exception) { pendingExport = null; throw e }
+    }
     private fun exportSettings() {
-        val json = JSONObject().put("schema", "frequency-guardian-settings/v1").put("theme", settings.getString("theme", "system")).toString(2)
-        java.io.File(cacheDir, "settings.json").writeText(json)
-        val uri = Uri.parse("content://$packageName.settings/settings.json")
-        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-            type = "application/json"; putExtra(Intent.EXTRA_STREAM, uri)
-            clipData = ClipData.newRawUri("Nonsecret settings", uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }, "Export nonsecret settings"))
+        saveJson("frequency-guardian-settings.json", JSONObject()
+            .put("schema", "frequency-guardian-settings/v1")
+            .put("theme", settings.getString("theme", "system")).toString(2))
     }
     @Deprecated("Platform activity result used to avoid external dependencies")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 2) {
+            val bytes = pendingExport
+            pendingExport = null
+            if (resultCode != RESULT_OK) return
+            guarded {
+                check(bytes != null) { "No export pending" }
+                val uri = data?.data ?: error("No save destination")
+                contentResolver.openOutputStream(uri, "wt")?.use { output ->
+                    output.write(bytes)
+                    output.flush()
+                } ?: error("Cannot save JSON to selected location")
+                toast("JSON saved to selected document")
+            }
+            return
+        }
         if (requestCode != 1 || resultCode != RESULT_OK) return
         guarded {
             val uri = data?.data ?: error("No settings document")
