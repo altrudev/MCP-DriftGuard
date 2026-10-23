@@ -114,6 +114,8 @@ current dependency vulnerability database scan was performed.
 
 The Codex sandbox's denied socket operations **were not VPS restrictions**. In a separate authorized terminal on the same VPS, an independent conformance execution on the exact isolated Codex implementation commit completed with exit 0. All seven suites passed: Go unit, Go race, Go vet, documentation, real HTTP client/loopback socket acceptance, stdio acceptance and extreme limits. The full Go race suite also independently passed outside the sandbox. Evidence is retained under `evidence/mcp-audit-20261023/direct-vps/`. This overrides the environment-only HTTP and full-Go-suite blockers *for the tested VPS process*. It does not establish an external remote MCP client, a production approved target/baseline, installed third-party skill operation, hosted release signing or long-lived production uptime. The original sandbox failures are retained without rewriting history.
 
+The rebuilt `mcpdrift` executable was installed at `/home/ubuntu/.local/bin/mcpdrift` on the VPS. A separate Codex CLI, configured under a disposable isolated `CODEX_HOME`, successfully registered this binary with the signed synthetic baseline and reported its MCP configuration enabled. This confirms configuration compatibility, **not** an AI model running the tools or a production operator target. Registration evidence is under `evidence/mcp-audit-20261023/direct-vps/`.
+
 ## Reproduction and usable process
 
 Operator installation and host configuration are in [INSTALL.md](INSTALL.md).
