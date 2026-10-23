@@ -12,9 +12,8 @@ inputs:
     description: Path to an MCP DriftGuard baseline
     required: true
   verify-key:
-    description: Optional path to an Ed25519 public verification key
-    required: false
-    default: ""
+    description: Required path to a trusted Ed25519 public verification key
+    required: true
   format:
     description: text, json, or sarif
     required: false
