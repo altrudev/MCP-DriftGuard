@@ -38,7 +38,7 @@ fun main() {
     check(!verifiesBody("frequency-guardian/approval/v1\u0000".toByteArray() + bytes.copyOfRange(domain.size, bytes.size)))
     refuses { f.consume(f.issued) }
     refuses { f.validate(f.issued) }
-    val report = DiagnosticsReport("0.3.0", 123)
+    val report = DiagnosticsReport("0.4.0", 123)
     check(report.results.size == 10)
     check(report.results.values.all { it.status == DiagnosticStatus.PENDING })
     DiagnosticChecks.local(report)
@@ -57,7 +57,7 @@ fun main() {
     check(json.contains("quote\\\" newline\\u000a slash\\\\"))
     check(json.contains("\"status\":\"fail\""))
     check(report.results["attestation_certificate_status"]?.status == DiagnosticStatus.PENDING)
-    java.io.File("app/build/host-tests/report.json").writeText(json)
+    java.io.File(System.getenv("FG_TEST_OUT"), "report.json").writeText(json)
     println("PASS: diagnostics schema, ten statuses, safe defaults, JSON escaping, real signature and negative verification")
     println("PASS: exact v1 encoding, nonce independence, immutable fields, time bounds, single consumption, ECDSA verification, tamper and cross-domain rejection")
 }

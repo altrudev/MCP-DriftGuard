@@ -1,3 +1,9 @@
+# Current repair evidence
+
+The repaired offline tap-approval artifact and current checks are recorded in
+[FINAL_STATUS.md](../../FINAL_STATUS.md). Everything below is historical and
+refers to earlier APKs, signing identities and diagnostic-only behavior.
+
 # v0.3 validation — 2026-10-23
 
 `./test-host.sh` passed: fixture encoding, nonce/replay/expiry boundaries,

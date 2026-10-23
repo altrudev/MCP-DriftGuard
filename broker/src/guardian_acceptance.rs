@@ -49,7 +49,7 @@ pub fn verify(
     }
     let d: Diagnostics = serde_json::from_slice(diagnostic_json)?;
     if d.schema != "frequency-guardian-diagnostics/v3"
-        || d.version != "0.3.0"
+        || !(d.version == "0.3.0" || d.version == "0.4.0")
         || d.created_unix == 0
         || d.production_eligible
         || d.private_keys_exported

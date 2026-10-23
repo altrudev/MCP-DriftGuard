@@ -1,6 +1,5 @@
 package dev.frequency.guardian
 
-import android.app.KeyguardManager
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -11,7 +10,7 @@ import java.security.spec.ECGenParameterSpec
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Separate, replaceable candidate. Never used by DeviceIdentity or the signing flow. */
+/** Attested enrollment candidate. Operational signing requires an independent authority grant. */
 internal class DiagnosticAttestation(private val context: Context) {
     private val alias = "frequency-guardian-attestation-candidate-v2"
     private val store get() = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -20,6 +19,7 @@ internal class DiagnosticAttestation(private val context: Context) {
         require(challengeHex.matches(Regex("[0-9a-fA-F]{64}"))) { "Supply exactly 32 random bytes as 64 hex characters from the independent verifier" }
         val challenge = challengeHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
         // Only this disposable diagnostic alias is replaced; the existing device key is untouched.
+        check(!context.getSharedPreferences("offline-trust", Context.MODE_PRIVATE).contains("grant")) { "Existing enrollment must be revoked before candidate replacement" }
         store.deleteEntry(alias)
         try { generateKey(challenge, true) }
         catch (_: StrongBoxUnavailableException) { generateKey(challenge, false) }
@@ -30,6 +30,7 @@ internal class DiagnosticAttestation(private val context: Context) {
             .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
             .setDigests(KeyProperties.DIGEST_SHA256)
             .setUserAuthenticationRequired(false)
+            .setUnlockedDeviceRequired(true)
             .setAttestationChallenge(challenge)
             .setIsStrongBoxBacked(strong).build()
         KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore").apply {
@@ -39,6 +40,17 @@ internal class DiagnosticAttestation(private val context: Context) {
 
     fun publicKey(): java.security.PublicKey = store.getCertificate(alias)?.publicKey
         ?: error("Generate a diagnostic attestation candidate first")
+
+    fun signer(): java.security.Signature {
+        val key = store.getKey(alias, null) ?: error("No candidate key")
+        val info = java.security.KeyFactory.getInstance(key.algorithm, "AndroidKeyStore")
+            .getKeySpec(key, android.security.keystore.KeyInfo::class.java)
+        val hardware = if (android.os.Build.VERSION.SDK_INT >= 31)
+            info.securityLevel in listOf(KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT, KeyProperties.SECURITY_LEVEL_STRONGBOX)
+            else info.isInsideSecureHardware
+        check(hardware && !info.isUserAuthenticationRequired) { "Hardware tap-approval key required" }
+        return java.security.Signature.getInstance("SHA256withECDSA").apply { initSign(key as java.security.PrivateKey) }
+    }
 
     fun certificateStatus(): DiagnosticResult {
         val chain = store.getCertificateChain(alias)

@@ -1,5 +1,11 @@
 # Frequency Guardian v0.2: diagnostic evidence and lost-device protocol
 
+Historical diagnostic/proposed contract. The current native tap approval workflow,
+independent enrollment, revocation and safe replacement are specified in
+[GUARDIAN-OFFLINE.md](GUARDIAN-OFFLINE.md). Its tap policy supersedes earlier
+per-operation biometric/password requirements. Existing diagnostic bridges and
+quorum evidence validators retain their diagnostic-only verdicts.
+
 Status: offline diagnostic foundations only. No enrollment, broker trust update,
 production approval, recovery execution or private-key export is enabled.
 

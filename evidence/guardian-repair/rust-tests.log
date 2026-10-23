@@ -1,0 +1,119 @@
+   Compiling driftguard-broker v0.1.0 (/home/ubuntu/guardian-v030-repair/broker)
+    Finished `test` profile [unoptimized] target(s) in 1.80s
+     Running unittests src/lib.rs (/dev/shm/guardian-repair/rust-target/debug/deps/driftguard_broker-b9920e5dd7138b17)
+
+running 10 tests
+test attestation::tests::rejects_bad_der ... ok
+test attestation::tests::refuses_self_assertions_and_bounds ... ok
+test runner::live::data_snapshot_starts_at_zero_and_rejects_mutation ... ok
+test runner::live::sealed_snapshots_survive_only_explicit_child_exec ... ok
+test runner::live::child_exec_excludes_unrelated_non_cloexec_host_descriptor ... ok
+test coordinator::tests::successful_record_preserves_observed_verdict_and_provenance ... ok
+test coordinator::tests::failure_burns_id_and_record_binds_exact_policy ... ok
+test coordinator::tests::invalid_signature_expiry_missing_and_unsafe_ledger_deny_before_runner ... ok
+test coordinator::tests::live_coordinator_authorized_fixture_execution ... ok
+test coordinator::tests::live_coordinator_failed_fixture_burns_id ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.51s
+
+     Running unittests src/main.rs (/dev/shm/guardian-repair/rust-target/debug/deps/driftguard_broker-201eaddbf522bcce)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/guardian-acceptance.rs (/dev/shm/guardian-repair/rust-target/debug/deps/guardian_acceptance-cd96dcc0e17b491c)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/guardian-attestation.rs (/dev/shm/guardian-repair/rust-target/debug/deps/guardian_attestation-c03878cd2acf6a7d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/guardian-challenge.rs (/dev/shm/guardian-repair/rust-target/debug/deps/guardian_challenge-ceb624bd15e4d03d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/guardian-enrollment.rs (/dev/shm/guardian-repair/rust-target/debug/deps/guardian_enrollment-6ff8ca4cc15fd164)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/guardian-recovery.rs (/dev/shm/guardian-repair/rust-target/debug/deps/guardian_recovery-ef445a86f4c05ae8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/attestation.rs (/dev/shm/guardian-repair/rust-target/debug/deps/attestation-33e24edcc59356b0)
+
+running 1 test
+test pinned_chain_challenge_properties_and_signature ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+     Running tests/contracts.rs (/dev/shm/guardian-repair/rust-target/debug/deps/contracts-fb4d9ddd50facd1a)
+
+running 8 tests
+test invalid_signature_never_burns ... ok
+test cli_denies_invalid_invocation_and_malformed_policy ... ok
+test strict_json_and_endpoint_contract ... ok
+test mutation_and_time_boundaries ... ok
+test python_generated_signature_and_exact_canonical_bytes ... ok
+test signed_but_inconsistent_evidence_and_invalid_envelopes_fail ... ok
+test exclusive_replay_concurrency_and_symlinks ... ok
+test signed_policy_and_independent_evidence ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/guardian_acceptance.rs (/dev/shm/guardian-repair/rust-target/debug/deps/guardian_acceptance-9cbdae10ee0498d8)
+
+running 1 test
+test refuses_unverified_or_forged_inputs ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/guardian_binding.rs (/dev/shm/guardian-repair/rust-target/debug/deps/guardian_binding-4a3f11adc338a623)
+
+running 1 test
+test valid_signature_and_all_negative_mutations ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/guardian_challenge.rs (/dev/shm/guardian-repair/rust-target/debug/deps/guardian_challenge-24421512a0e8fd14)
+
+running 1 test
+test issued_challenge_is_random_bounded_and_one_use ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/recovery.rs (/dev/shm/guardian-repair/rust-target/debug/deps/recovery-63b465a8c6a5fd49)
+
+running 2 tests
+test durable_one_use_nonce_rejects_replay_and_unsafe_ledger ... ok
+test quorum_and_negative_cases ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/runner.rs (/dev/shm/guardian-repair/rust-target/debug/deps/runner-4e3fcd4cb23ad20e)
+
+running 4 tests
+test tampering_endpoint_expiry_and_live_authorization_deny ... ok
+test bounded_streams_deadline_and_nonregular_inputs ... ok
+test go_contract_verdicts_and_operational_errors ... ok
+test live_namespace_contract ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s
+
+   Doc-tests driftguard_broker
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

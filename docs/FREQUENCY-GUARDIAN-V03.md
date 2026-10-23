@@ -1,5 +1,11 @@
 # Frequency Guardian v0.3 diagnostics
 
+Historical diagnostic/proposed contract. The current native tap approval workflow,
+independent enrollment, revocation and safe replacement are specified in
+[GUARDIAN-OFFLINE.md](GUARDIAN-OFFLINE.md). Its tap policy supersedes earlier
+per-operation biometric/password requirements. Existing diagnostic bridges and
+quorum evidence validators retain their diagnostic-only verdicts.
+
 The home screen has **Run All Diagnostics**, ten visible results, and **Export
 diagnostics JSON**. One system authentication signs a fresh local fixture.
 Export uses an allowlisted read-only JSON Sharesheet attachment. Schema

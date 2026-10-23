@@ -1,126 +1,78 @@
-# Frequency Guardian 0.3.0
+# Frequency Guardian — native offline approval repair
 
-Actual native Kotlin Android app. Android 11/API 30 minimum, target/compile API 35,
-AGP 8.7.3, Kotlin Gradle plugin 2.0.21, Java 17 bytecode. Native platform widgets
-and BiometricPrompt; no third-party runtime UI dependencies. System/light/dark
-appearance, original shield/wave vector icon, about/security and glossary included.
+Native Kotlin Android app, API 30 minimum / target 35, Kotlin 2.0.21, Java 17.
+Approve and Deny use explicit taps, with **no additional biometric/password dialog**.
+The app has no Internet or biometric permission and disables backups and screenshots.
+Keys are nonexportable Android Keystore P-256, prefer StrongBox, permit TEE fallback,
+and refuse software signing. Newly generated keys require an unlocked device.
 
-**Diagnostic only.** No production approvals, broker acceptance, live pairing,
-production attestation acceptance or implemented recovery. Read the
-[mobile v1 contract](../../docs/MOBILE-APPROVAL-V1.md) before any future integration.
-The UI creates a short-lived local fixture, displays it, obtains per-operation
-system authentication, signs with Android Keystore and verifies locally. It does
-not accept arbitrary requests. Hardware generation/security behavior requires a
-real supported Android device; an emulator is not evidence of hardware custody.
+The operational workflow is now separate from local diagnostics. It uses the
+**independently attested candidate key itself** for decisions. A separately pinned
+verifier must issue signed, expiring enrollment and fresh signed action requests.
+The installed APK signer, candidate key and enrollment must match. The independent
+reference verifier checks attestation, application signing, locked verified boot,
+patch policy, live certificate status, issued challenges, receipt signatures,
+revocation and replay. Full workflow and exact protocol:
+[GUARDIAN-OFFLINE.md](../../docs/GUARDIAN-OFFLINE.md).
 
-## Build
+Import signed enrollment/request/revocation files through Android's document picker.
+Review the full action, nonce, expiry and digest; Approve or Deny creates a signed
+receipt that can be saved through the picker. The request nonce is persisted as
+consumed before signing. Backgrounding cancels unresolved review. Diagnostics,
+attestation exports and settings imports cannot establish trust.
 
-Use Gradle 8.9 (AGP 8.7's corresponding supported generation), JDK 17, SDK 35 and
-build-tools 35.0.0. No wrapper JAR/distribution is bundled. With those dependencies
-already cached:
+Local revocation permanently blocks that candidate; verifier revocation blocks even
+outstanding receipts. Safe replacement requires a fresh candidate and complete
+independent enrollment. There is no automatic authority replacement, private-key
+migration, trust reset or quorum activation. The existing quorum verifier validates
+authorization evidence only. Lost authority/ledger recovery remains blocked.
 
-```sh
-cd android/FrequencyGuardian
-# local.properties is ignored; use your installed SDK path
-printf 'sdk.dir=/opt/android-sdk\n' > local.properties
-gradle --offline --no-daemon assembleDebug
-```
+## Build and tests
 
-Standard result: `app/build/outputs/apk/debug/app-debug.apk`. Gradle's debug APK
-certificate is for installation only; it is unrelated to the nonexportable
-on-device approval key. Do not distribute debug builds as production enrollment
-clients. A release requires a separately managed APK signing identity, release
-review and tested upgrade continuity; no production APK key is checked in.
-
-For this socket-restricted workspace there is also a direct SDK fallback:
+The installed SDK is `/opt/android-sdk`; cached Kotlin/SDK tools are used without
+downloads. Temporary compiler data, generated classes, test keys, logs and build
+intermediates default to `/dev/shm`. No `/tmp` usage is required.
 
 ```sh
 ANDROID_SDK_ROOT=/opt/android-sdk ./build-sdk-offline.sh
-```
-
-Override `FG_BUILD_TOOLS` and `FG_MAVEN_CACHE` for other installed paths. It uses aapt2,
-javac, cached Kotlin 2.0.21 compiler, d8, zipalign and apksigner, and creates a disposable debug
-APK signing keystore under ignored build output. It never creates/exports a phone
-approval private key. Result: `app/build/sdk-offline/FrequencyGuardian-0.3.0-debug.apk`.
-This fallback uses the same cached Kotlin 2.0.21 compiler/runtime as the Gradle project. See BUILD-VALIDATION.md for actual build outcomes and limitations.
-
-Host-side security checks (same cached Kotlin compiler and Python 3, no device required):
-
-```sh
 ./test-host.sh
 ```
 
-These check exact fixture bytes, independent nonces, immutable inputs, clock
-bounds, one-use consumption, signature verification, tampering and domain
-separation. They do not establish Android hardware or prompt behavior.
+APK: `app/build/outputs/apk/debug/FrequencyGuardian-0.3.0-debug.apk`.
+This is a **debug APK**, with a disposable signing certificate stored only in the
+build area. It is not a production update identity. Keep a stable separately
+managed signing key for release/update continuity. Do not confuse the APK signer
+with either on-phone key. Host tests include independent Python ↔ Kotlin encoding
+and ECDSA verification. `cryptography` 46.x is needed for the Python tests/verifier.
 
-## Install without USB
+For standard Gradle builds use Gradle 8.9, JDK 17, SDK 35, AGP 8.7.3 and Kotlin
+2.0.21. In this sandbox the direct SDK build avoids restricted Gradle IPC; set
+`GRADLE_USER_HOME`, `java.io.tmpdir` and project build directories to `/dev/shm` if
+using Gradle here. Only the direct SDK build was validated for this repair.
 
-1. Deliver the debug APK over an authenticated HTTPS download location you control
-   or a trusted file-transfer channel. Hosting/publication is not performed here.
-   Compare SHA-256 against a separately authenticated value before installation.
-2. On the phone open that download in its browser, tap the APK, and temporarily
-   permit **Install unknown apps** for that browser if Android asks. Install, then
-   disable that browser's install permission again. Device/enterprise policy may
-   prohibit sideloading. Open Frequency Guardian and set a secure screen lock if
-   requested. Use a supported physical phone for the hardware-key diagnostic.
-3. Updates require the same package and APK signing certificate; keep the debug
-   certificate locally for development updates. Uninstall/clear storage loses the
-   app identity and settings. Never use uninstall as production recovery.
+## Install and acceptance
 
-Wireless debugging on Android 11+ (trusted local Wi-Fi, no USB assumed): enable
-Developer options, then Wireless debugging → Pair device with pairing code.
-Use the actual pairing host/port and code shown on the phone:
+Transfer the APK through an authenticated private channel; compare SHA-256 through
+a separate trusted channel. Open it on a supported physical phone and allow the
+chosen installer temporarily if device policy permits. No hosting or publication
+was performed. A different installed APK signer requires a separate test device or
+explicit uninstall; uninstall destroys app identity/trust, so do not treat it as
+recovery. Do not uninstall an enrolled app as an upgrade procedure.
 
-```sh
-adb pair PHONE_IP:PAIRING_PORT
-adb connect PHONE_IP:DEBUGGING_PORT
-adb devices
-adb -s PHONE_IP:DEBUGGING_PORT install -r app/build/sdk-offline/FrequencyGuardian-0.3.0-debug.apk
-```
+Actual hardware custody, no-extra-prompt taps, document providers, lock/background
+behavior, app update continuity and real OEM/Google attestation require physical
+acceptance. In this sandbox ADB cannot start its listening socket; no device test
+was possible. The root [FINAL_STATUS.md](../../FINAL_STATUS.md) records current
+commands, results, artifact hashes and genuine outstanding acceptance gates.
+Historical build results in BUILD-VALIDATION.md describe earlier artifacts only.
 
-Pairing and debugging ports differ and may change. Confirm the listed device is
-yours. Turn wireless debugging off and forget the workstation when finished.
-No ADB, emulator or device operation was attempted by the project build.
-
-## Device acceptance checklist
-
-- On a StrongBox phone: confirm reported StrongBox level and no fallback. On a
-  TEE-only device: confirm fallback message and TEE level. Software-only/unknown
-  keys must fail signing. API 30 can only report secure-hardware membership.
-- Without device PIN/password, key setup must refuse. With enrolled strong
-  biometrics or device credential, confirm each signature requires a system
-  prompt. Cancellation, failed authentication, backgrounding and expiry must
-  produce no receipt. Verify device-credential behavior on actual OEM builds.
-- Review nonce, digest, exact action and expiry; local diagnostic receipt must
-  verify with the shared public key. Never regard that receipt as approval.
-- Expired/replayed external requests, URI/deep-link and send intents have no
-  approval importer or signing path. Sharing pairing data must not mark paired.
-- Export via Sharesheet, import via document picker and confirm theme; reject
-  extra/duplicate fields, bad schema, invalid theme, trailing bytes and >4096-byte
-  files. Key fingerprint must remain unchanged. Test a document provider and a
-  Sharesheet receiver on device.
-- Check light/dark/system, rotation, small display/large font, lock/unlock,
-  biometric changes, key invalidation and reinstall. No network permission or
-  telemetry should appear. Recovery ceremony remains a release blocker.
-
-## IP and custody
+The app does not execute actions or connect to a production broker. A downstream
+executor must verify a one-use **approve** receipt for exactly the issued action
+and establish its own transaction boundary. A denial or unsigned JSON cannot
+execute anything. Offline phone revocation cannot synchronize itself; revoke on
+the authority first. Lack of live certificate status blocks verifier acceptance.
 
 Root [LICENSE](../../LICENSE), [NOTICE](../../NOTICE) and
 [COMMERCIAL.md](../../COMMERCIAL.md) apply. No proprietary service source or
-branding rights are conveyed. Settings exports contain only schema and theme; diagnostics contain public observations;
-no private-key migration, key backup, trust import or recovery shortcuts exist.
-
-## v0.2 diagnostic attestation
-
-See [v0.2 evidence and recovery protocol](../../docs/FREQUENCY-GUARDIAN-V02.md)
-for externally supplied challenge generation, explicit certificate export bounds,
-independent pinned-root Rust verification and the future recovery ceremony.
-The candidate is separate from the existing signing key and never enrolls itself.
-
-## v0.3 Run All Diagnostics
-
-The home screen runs all ten checks and shares one JSON attachment with explicit
-pass/fail/pending results. See [v0.3 semantics and acceptance](../../docs/FREQUENCY-GUARDIAN-V03.md).
-Attestation requires an external verifier challenge; certificates are never
-automatically trusted. Recovery and device update acceptance remain pending.
+branding rights are conveyed. No keys or authority credentials are included in
+this repository's source.

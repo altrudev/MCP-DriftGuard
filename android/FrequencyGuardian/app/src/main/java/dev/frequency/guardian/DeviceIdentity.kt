@@ -1,7 +1,6 @@
 package dev.frequency.guardian
 
 import android.content.Context
-import android.app.KeyguardManager
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyInfo
 import android.security.keystore.KeyProperties
@@ -31,6 +30,7 @@ internal class DeviceIdentity(private val context: Context) {
             prefs.edit().putString("fallback", "StrongBox unavailable; standard Android Keystore fallback used").commit()
         }
     }
+    fun needsMigration() = store.containsAlias(legacyAlias) && !store.containsAlias(alias)
     fun migrateWithConsent() {
         check(!store.containsAlias(alias)) { "Simple-approval key already present" }
         try { generate(true) } catch (_: StrongBoxUnavailableException) { generate(false) }
@@ -40,6 +40,7 @@ internal class DeviceIdentity(private val context: Context) {
             .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
             .setDigests(KeyProperties.DIGEST_SHA256)
             .setUserAuthenticationRequired(false)
+            .setUnlockedDeviceRequired(true)
             .setIsStrongBoxBacked(strong).build()
         KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore").apply { initialize(spec); generateKeyPair() }
     }

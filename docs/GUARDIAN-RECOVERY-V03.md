@@ -1,5 +1,11 @@
 # Guardian v0.3 recovery authorization evidence
 
+Historical diagnostic/proposed contract. The current native tap approval workflow,
+independent enrollment, revocation and safe replacement are specified in
+[GUARDIAN-OFFLINE.md](GUARDIAN-OFFLINE.md). Its tap policy supersedes earlier
+per-operation biometric/password requirements. Existing diagnostic bridges and
+quorum evidence validators retain their diagnostic-only verdicts.
+
 A standalone, offline independent verifier is implemented in `broker/src/recovery.rs`, with CLI `guardian-recovery POLICY.json REQUEST.json PRIVATE_NONCE_LEDGER_DIRECTORY`. This is an authorization-evidence component, **not a completed recovery ceremony**. It never replaces device keys, changes enrollment, or admits production operations.
 
 A separately trusted recovery policy binds 2–7 Ed25519 authority public keys and a threshold of at least two. The request binds old/new device SPKI SHA-256 digests, a 32-byte nonce and an expiration within ten minutes. Each distinct policy authority must sign the exact domain-separated binary payload. An altered payload, duplicate authority, insufficient signatures, expired/overlong request, unapproved signer or invalid policy fails closed.

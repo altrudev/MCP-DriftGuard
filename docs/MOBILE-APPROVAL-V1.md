@@ -1,5 +1,11 @@
 # Frequency Guardian mobile approval contract v1 (design, acceptance DISABLED)
 
+Historical diagnostic/proposed contract. The current native tap approval workflow,
+independent enrollment, revocation and safe replacement are specified in
+[GUARDIAN-OFFLINE.md](GUARDIAN-OFFLINE.md). Its tap policy supersedes earlier
+per-operation biometric/password requirements. Existing diagnostic bridges and
+quorum evidence validators retain their diagnostic-only verdicts.
+
 Status: experimental v0.1.0. This specification is an interoperability boundary for a
 future Rust broker adapter, **not** authorization to accept mobile signatures.
 The existing broker uses pinned Ed25519 keys and remains unchanged. Never feed a

@@ -471,3 +471,87 @@ pub fn verify_application_id(
     }
     Ok(())
 }
+
+/// Additional operational policy. Diagnostic chain verification alone is insufficient.
+/// Requires a hardware-enforced no-auth signing key, locked verified boot and a patch floor.
+pub fn verify_enrollment_policy(export_json: &[u8], minimum_patch: u32) -> Result<()> {
+    let export: Export = serde_json::from_slice(export_json)?;
+    let der = STANDARD.decode(export.certificates_der_b64.first().ok_or("missing leaf")?)?;
+    let cert = children(exact(&der, 16)?)?;
+    let tbs = children(*cert.first().ok_or("missing certificate")?)?;
+    let container: Vec<_> = tbs.iter().filter(|e| e.class == 2 && e.tag == 3).collect();
+    if container.len() != 1 {
+        return Err("invalid extension container".into());
+    }
+    let wrapper = children(*container[0])?;
+    if wrapper.len() != 1 {
+        return Err("invalid extension wrapper".into());
+    }
+    let mut descriptions = Vec::new();
+    for extension in children(wrapper[0])? {
+        let fields = children(extension)?;
+        if fields
+            .first()
+            .map(|f| f.tag == 6 && f.value == [43, 6, 1, 4, 1, 214, 121, 2, 1, 17])
+            .unwrap_or(false)
+        {
+            descriptions.push(children(exact(
+                fields.last().ok_or("missing description")?.value,
+                16,
+            )?)?);
+        }
+    }
+    if descriptions.len() != 1 || descriptions[0].len() != 8 {
+        return Err("invalid attestation description".into());
+    }
+    let hardware = children(descriptions[0][7])?;
+    let field = |tag| -> Result<Tlv<'_>> {
+        let values: Vec<_> = hardware
+            .iter()
+            .filter(|f| f.class == 2 && f.tag == tag)
+            .collect();
+        if values.len() != 1 {
+            return Err("missing or duplicated operational key property".into());
+        }
+        Ok(*values[0])
+    };
+    if !exact(field(503)?.value, 5)?.value.is_empty() {
+        return Err("noAuthRequired missing".into());
+    }
+    if hardware
+        .iter()
+        .any(|f| f.class == 2 && (f.tag == 504 || f.tag == 505))
+    {
+        return Err("authenticated key refused for tap workflow".into());
+    }
+    for (tag, value) in [(1, 2), (5, 4)] {
+        let values = children(exact(field(tag)?.value, 17)?)?;
+        if !values.iter().any(|f| number(*f, 2).ok() == Some(value)) {
+            return Err("signing purpose or SHA-256 missing".into());
+        }
+    }
+    let boot = children(exact(field(704)?.value, 16)?)?;
+    if boot.len() != 4
+        || boot[0].tag != 4
+        || boot[0].value.is_empty()
+        || boot[1].tag != 1
+        || boot[1].value != [255]
+        || number(boot[2], 10)? != 0
+        || boot[3].tag != 4
+        || boot[3].value.is_empty()
+    {
+        return Err("locked verified boot required".into());
+    }
+    let patch = exact(field(706)?.value, 2)?;
+    if patch.value.is_empty() || patch.value.len() > 4 || patch.value[0] & 128 != 0 {
+        return Err("invalid OS patch level".into());
+    }
+    let value = patch
+        .value
+        .iter()
+        .fold(0u32, |v, b| (v << 8) | u32::from(*b));
+    if minimum_patch < 202001 || value < minimum_patch {
+        return Err("OS patch below independent policy".into());
+    }
+    Ok(())
+}

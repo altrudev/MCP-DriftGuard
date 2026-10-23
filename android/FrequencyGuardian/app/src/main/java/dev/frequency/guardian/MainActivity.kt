@@ -2,14 +2,12 @@ package dev.frequency.guardian
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.hardware.biometrics.BiometricPrompt
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
-import android.os.CancellationSignal
 import android.view.WindowInsets
 import android.view.WindowManager
 import android.widget.*
@@ -20,14 +18,14 @@ import java.time.Instant
 class MainActivity : Activity() {
     private lateinit var column: LinearLayout
     private lateinit var identity: DeviceIdentity
-    private var cancellation: CancellationSignal? = null
-    private var activeFixture: LocalFixture? = null
+    private lateinit var offline: OfflineApproval
+    private var diagnosticDialog: AlertDialog? = null
     private var diagnostics: DiagnosticsReport? = null
+    private var offlineStatus: TextView? = null
     private var diagnosticView: TextView? = null
     private var pendingExport: ByteArray? = null
     private fun refreshDiagnostics() { diagnosticView?.text = diagnostics?.summary() ?: "Run diagnostics to collect evidence." }
     private fun runAllDiagnostics() {
-        check(activeFixture == null) { "Authentication already pending" }
         val report = DiagnosticsReport(BuildConfig.VERSION_NAME)
         diagnostics = report
         fun observe(name: String, action: () -> Unit) {
@@ -52,7 +50,7 @@ class MainActivity : Activity() {
             if (baseline == null) check(settings.edit().putString("diagnostic-identity-baseline", fingerprint).commit())
         }
         refreshDiagnostics()
-        try { report.set("ecdsa", DiagnosticStatus.PENDING, "Awaiting explicit Approve; no automatic signing") }
+        try { report.set("ecdsa", DiagnosticStatus.PENDING, "Awaiting explicit Approve; no automatic signing"); refreshDiagnostics(); review() }
         catch (e: Exception) { report.set("ecdsa", DiagnosticStatus.FAIL, e.message ?: "Signing unavailable"); refreshDiagnostics() }
     }
     private val settings get() = getSharedPreferences("nonsecret-settings", MODE_PRIVATE)
@@ -61,6 +59,7 @@ class MainActivity : Activity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         applyTheme()
         identity = DeviceIdentity(this)
+        offline = OfflineApproval(this, ::saveJson)
         render()
         if (intent.action != Intent.ACTION_MAIN && intent.action != null) {
             toast("External approval requests are unsupported and refused")
@@ -81,7 +80,7 @@ class MainActivity : Activity() {
         column.addView(TextView(this).apply { this.text = text; textSize = size; setPadding(0, 12, 0, 12); setTextIsSelectable(true) })
     }
     private fun button(title: String, action: () -> Unit) {
-        column.addView(Button(this).apply { text = title; isAllCaps = false; setOnClickListener { guarded(action) } })
+        column.addView(Button(this).apply { text = title; isAllCaps = false; filterTouchesWhenObscured = true; setOnClickListener { guarded(action) } })
     }
     private fun render() {
         column = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(28, 30, 28, 40) }
@@ -95,10 +94,22 @@ class MainActivity : Activity() {
             requestApplyInsets()
         })
         label("Frequency Guardian", 28f)
-        label("v${BuildConfig.VERSION_NAME} • Offline diagnostic", 18f)
-        label("Production approvals disabled. No broker connection, remote request import, or operational authorization.")
+        label("v${BuildConfig.VERSION_NAME} • Offline approval", 18f)
+        offlineStatus = TextView(this).apply { text = offline.status(); textSize = 16f; setPadding(0, 12, 0, 12) }
+        column.addView(offlineStatus)
+        label("Offline file workflow. An independent verifier must authorize enrollment and each fresh request. No network connection.")
+        button("Pin independent verifier") { offline.pin() }
+        button("Save candidate enrollment identity") { offline.exportIdentity() }
+        button("Import signed enrollment / request / revocation") {
+            startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "*/*"; addCategory(Intent.CATEGORY_OPENABLE) }, 3)
+        }
+        button("Revoke this enrollment locally") {
+            AlertDialog.Builder(this).setTitle("Revoke this device key?")
+                .setMessage("This permanently blocks this candidate locally. Also revoke it at the independent verifier. Recovery requires a new independently verified candidate.")
+                .setNegativeButton("Cancel", null).setPositiveButton("Revoke") { _, _ -> guarded { offline.revoke(); recreate() } }.show()
+        }
         button("Run All Diagnostics") { runAllDiagnostics() }
-        button("Enable simple Approve / Deny") {
+        if (identity.needsMigration()) button("Migrate legacy diagnostic identity to tap approval") {
             AlertDialog.Builder(this).setTitle("Use tap-to-approve?")
                 .setMessage("This generates a NEW hardware-backed key without per-action biometrics. The original key is preserved; any trusted enrollment must be independently reverified. Anyone using this unlocked phone could approve.")
                 .setNegativeButton("Deny", null)
@@ -119,19 +130,19 @@ class MainActivity : Activity() {
             button("Save pairing JSON") { saveJson("frequency-guardian-pairing.json", identity.pairing()) }
             button("Review local signing diagnostic") { review() }
         }
-        label("Attestation candidate: separate P-256 key; no trust or enrollment is enabled.")
+        label("Operational candidate: independent attestation and signed enrollment required before decisions.")
         button("Generate attestation candidate") {
             val input = EditText(this).apply {
                 hint = "Independent verifier challenge: 64 hex characters"
                 filters = arrayOf(android.text.InputFilter.LengthFilter(64))
                 inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
             }
-            AlertDialog.Builder(this).setTitle("Replace diagnostic candidate only?")
-                .setMessage("Paste a fresh externally generated random 32-byte challenge. Randomness cannot be verified here. The existing device signing key is preserved. No automatic trust.")
+            AlertDialog.Builder(this).setTitle("Generate fresh enrollment candidate?")
+                .setMessage("Paste a fresh 32-byte challenge issued by the independent verifier. An existing enrollment must be revoked before replacing its candidate. No trust is granted by generation.")
                 .setView(input).setNegativeButton("Cancel", null)
                 .setPositiveButton("Generate") { _, _ -> guarded {
                     DiagnosticAttestation(this).generate(input.text.toString())
-                    toast("Diagnostic candidate generated; unverified and not enrolled")
+                    toast("Candidate generated; independent enrollment required")
                 } }.show()
         }
         button("Sign candidate binding JSON") {
@@ -164,7 +175,6 @@ class MainActivity : Activity() {
     }
     private fun bindCandidate(challengeHex: String) {
         require(challengeHex.matches(Regex("[0-9a-fA-F]{64}"))) { "Expected 64 hexadecimal characters" }
-        check(activeFixture == null && cancellation == null) { "Another authentication is pending" }
         val candidate = DiagnosticAttestation(this).publicKey().encoded
         val old = identity.publicKey().encoded
         check(!candidate.contentEquals(old)) { "Distinct candidate identity required" }
@@ -188,9 +198,10 @@ class MainActivity : Activity() {
     }
     private fun review() {
         val fixture = LocalFixture.create()
-        AlertDialog.Builder(this).setTitle("Local diagnostic • no action authorized")
-            .setMessage("Source: generated in this app, not a paired broker.\n\n${String(fixture.action, Charsets.UTF_8)}\n\nNonce: ${fixture.nonce.hex()}\nIssued: ${Instant.ofEpochSecond(fixture.issued)}\nExpires: ${Instant.ofEpochSecond(fixture.expires)}\nAction SHA-256: ${fixture.digest.hex()}\n\nAuthentication signs only this diagnostic domain.")
-            .setNegativeButton("Deny", null).setPositiveButton("Approve") { _, _ -> guarded { approveFixture(fixture) } }.show()
+        diagnosticDialog?.dismiss()
+        diagnosticDialog = AlertDialog.Builder(this).setTitle("Local diagnostic • no action authorized")
+            .setMessage("Source: generated in this app, not a paired broker.\n\n${String(fixture.action, Charsets.UTF_8)}\n\nNonce: ${fixture.nonce.hex()}\nIssued: ${Instant.ofEpochSecond(fixture.issued)}\nExpires: ${Instant.ofEpochSecond(fixture.expires)}\nAction SHA-256: ${fixture.digest.hex()}\n\nApprove signs only this diagnostic domain without an extra authentication prompt.")
+            .setNegativeButton("Deny") { _, _ -> diagnostics?.set("ecdsa", DiagnosticStatus.PENDING, "Diagnostic denied; no signature"); refreshDiagnostics() }.setPositiveButton("Approve") { _, _ -> guarded { approveFixture(fixture) } }.show()
     }
     private fun approveFixture(fixture: LocalFixture) {
         fixture.validate(System.currentTimeMillis()/1000)
@@ -199,62 +210,13 @@ class MainActivity : Activity() {
         signer.update(bytes)
         val signed = signer.sign()
         check(Signature.getInstance("SHA256withECDSA").run { initVerify(identity.publicKey()); update(bytes); verify(signed) }) { "Signature verification failed" }
+        diagnostics?.let { DiagnosticChecks.signed(it, identity.publicKey(), bytes, signed); refreshDiagnostics() }
         toast("Approved local diagnostic only")
     }
-    private fun authenticate(fixture: LocalFixture, report: DiagnosticsReport? = null) {
-        check(activeFixture == null) { "Authentication already pending" }
-        fixture.validate(System.currentTimeMillis() / 1000)
-        val signer = identity.signer()
-        val signal = CancellationSignal()
-        cancellation = signal
-        activeFixture = fixture
-        val prompt = BiometricPrompt.Builder(this).setTitle("Sign local diagnostic")
-            .setSubtitle("No production operation will be approved")
-            .setAllowedAuthenticators(android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_STRONG or android.hardware.biometrics.BiometricManager.Authenticators.DEVICE_CREDENTIAL).build()
-        prompt.authenticate(BiometricPrompt.CryptoObject(signer), signal, mainExecutor, object : BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationError(code: Int, message: CharSequence) {
-                activeFixture = null; cancellation = null
-                report?.set("ecdsa", DiagnosticStatus.PENDING, "Authentication cancelled or unavailable: $message")
-                refreshDiagnostics(); toast("Not signed: $message")
-            }
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                val pending = activeFixture
-                activeFixture = null; cancellation = null
-                if (pending !== fixture || isFinishing || isDestroyed) return
-                try {
-                    fixture.validate(System.currentTimeMillis() / 1000)
-                    val authorized = result.cryptoObject?.signature ?: error("Missing authenticated signing operation")
-                    check(authorized === signer) { "Unexpected signing operation" }
-                    authorized.update(fixture.consume(System.currentTimeMillis() / 1000))
-                    val signature = authorized.sign()
-                    check(Signature.getInstance("SHA256withECDSA").run { initVerify(identity.publicKey()); update(fixture.bytes()); verify(signature) })
-                    if (report != null) {
-                        try { DiagnosticChecks.signed(report, identity.publicKey(), fixture.bytes(), signature) }
-                        catch (e: Exception) { report.set("tampering", DiagnosticStatus.FAIL, e.message ?: "Verification failed") }
-                        refreshDiagnostics()
-                        return
-                    }
-                    val receipt = JSONObject().put("schema", "frequency-guardian-diagnostic-signature/v1")
-                        .put("production_eligible", false).put("algorithm", "ES256-DER")
-                        .put("signed_bytes_b64", fixture.bytes().b64()).put("signature_der_b64", signature.b64())
-                        .put("fingerprint_sha256", identity.fingerprint()).toString(2)
-                    AlertDialog.Builder(this@MainActivity).setTitle("Diagnostic signature verified locally")
-                        .setMessage(receipt).setPositiveButton("Close", null).setNeutralButton("Share") { _, _ -> shareText(receipt) }.show()
-                } catch (e: Exception) {
-                    report?.set("ecdsa", DiagnosticStatus.FAIL, e.message ?: "Signing failed")
-                    refreshDiagnostics()
-                    labelError(e.message ?: "Signing failed")
-                }
-            }
-        })
-    }
     override fun onStop() {
-        if (activeFixture != null) {
-            diagnostics?.takeIf { it.results["ecdsa"]?.status == DiagnosticStatus.PENDING }
-                ?.set("ecdsa", DiagnosticStatus.PENDING, "Interrupted; rerun and complete system authentication")
-            refreshDiagnostics()
-        }
-        activeFixture = null; cancellation?.cancel(); cancellation = null; super.onStop()
+        offline.stop()
+        diagnosticDialog?.dismiss(); diagnosticDialog = null
+        super.onStop()
     }
     private fun saveJson(filename: String, payload: String) {
         check(pendingExport == null) { "Finish the previous export first" }
@@ -293,6 +255,26 @@ class MainActivity : Activity() {
             }
             return
         }
+        if (requestCode == 3) {
+            if (resultCode != RESULT_OK) return
+            guarded {
+                val uri = data?.data ?: error("No trust document")
+                val bytes = contentResolver.openInputStream(uri)?.use { input ->
+                    val buffer = java.io.ByteArrayOutputStream()
+                    val chunk = ByteArray(1024)
+                    while (buffer.size() <= 16000) {
+                        val n = input.read(chunk, 0, minOf(chunk.size, 16001 - buffer.size()))
+                        if (n < 0) break
+                        buffer.write(chunk, 0, n)
+                    }
+                    buffer.toByteArray()
+                } ?: error("Cannot read trust document")
+                require(bytes.size <= 16000) { "Trust document too large" }
+                offline.importDocument(bytes.toString(Charsets.US_ASCII))
+                offlineStatus?.text = offline.status()
+            }
+            return
+        }
         if (requestCode != 1 || resultCode != RESULT_OK) return
         guarded {
             val uri = data?.data ?: error("No settings document")
@@ -317,7 +299,7 @@ class MainActivity : Activity() {
     }
     private fun about() {
         AlertDialog.Builder(this).setTitle("About & security • v${BuildConfig.VERSION_NAME}")
-            .setMessage("Native Kotlin • Android 11+\n\nKey: nonexportable Android Keystore P-256, explicit tap approval required in the interface; no per-action biometric or password. StrongBox preferred; TEE fallback reported; software keys cannot sign. No Internet permission, telemetry, backups, or private-key migration. Pairing payload is an unverified diagnostic enrollment candidate, not authorization.\n\nLost phone: recovery must be provisioned BEFORE loss with an independent offline recovery identity and quorum policy. Quorum must revoke the lost key and activate a newly attested device. This app cannot perform recovery or production enrollment yet. Do not uninstall or clear storage expecting identity recovery.\n\nGlossary: SPKI = encoded public key; nonce = one-use random challenge; digest = SHA-256 action commitment; attestation = hardware evidence requiring independent verification; quorum = required independent approvals.\n\nIP boundary: repository Apache-2.0/NOTICE applies. No proprietary Frequency/DDC/DSR implementation or branding license is implied. See COMMERCIAL.md and the mobile contract.")
+            .setMessage("Native Kotlin • Android 11+\n\nKey: nonexportable Android Keystore P-256, explicit tap approval required in the interface; no per-action biometric or password. StrongBox preferred; TEE fallback reported; software keys cannot sign. No Internet permission, telemetry, backups, or private-key migration. Pairing payload is an unverified diagnostic enrollment candidate, not authorization.\n\nLost phone: recovery must be provisioned BEFORE loss with an independent offline recovery identity and quorum policy. Quorum must revoke the lost key and activate a newly attested device. Offline enrollment requires a separately pinned independent verifier. Local revocation permits a fresh candidate; no automatic recovery or authority replacement is allowed. Do not uninstall or clear storage expecting identity recovery.\n\nGlossary: SPKI = encoded public key; nonce = one-use random challenge; digest = SHA-256 action commitment; attestation = hardware evidence requiring independent verification; quorum = required independent approvals.\n\nIP boundary: repository Apache-2.0/NOTICE applies. No proprietary Frequency/DDC/DSR implementation or branding license is implied. See COMMERCIAL.md and the mobile contract.")
             .setPositiveButton("Close", null).show()
     }
     private fun shareText(text: String) { startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, text) }, "Share public diagnostic data")) }
