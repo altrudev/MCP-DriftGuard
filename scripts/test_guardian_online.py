@@ -17,6 +17,35 @@ from cryptography.hazmat.primitives.asymmetric import ec
 import guardian_online as online
 import guardian_offline as g
 
+class HTTPBoundaryTests(unittest.TestCase):
+    def test_unauthenticated_and_unsupported_requests_never_dispatch(self):
+        calls=[]
+        class Service:
+            def call(self, *args):
+                calls.append(args)
+                raise AssertionError('unauthenticated request reached authority')
+        class Connection:
+            def __init__(self, request): self.request=request; self.output=bytearray()
+            def makefile(self, *args): return io.BytesIO(self.request)
+            def settimeout(self, *args): pass
+            def sendall(self, data): self.output.extend(data)
+        host=type('Host',(),{'service':Service()})()
+        requests = [
+            b'POST /v1/pending HTTP/1.0\r\nContent-Type: application/json\r\nContent-Length: 2\r\n\r\n{}',
+            b'GET /private HTTP/1.0\r\n\r\n',
+            b'POST /v1/pending HTTP/1.0\r\nContent-Type: application/json\r\nContent-Length: 2\r\nContent-Length: 2\r\n\r\n{}',
+        ]
+        for request in requests:
+            with self.subTest(request=request.split(b'\r\n')[0]):
+                connection=Connection(request)
+                online.Handler(connection,('memory',0),host)
+                head,body=bytes(connection.output).split(b'\r\n\r\n',1)
+                self.assertNotIn(b' 200 ',head)
+                self.assertNotIn(b'Python',head)
+                self.assertIn(b'Cache-Control: no-store',head)
+                self.assertEqual(json.loads(body),{'error':'refused; no acceptance confirmed'})
+        self.assertEqual(calls,[])
+
 class OnlineTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(dir='/dev/shm', prefix='guardian-online-')
@@ -78,6 +107,28 @@ class OnlineTests(unittest.TestCase):
             try: self.call('/v1/pending',{})
             except ValueError: pass
         with self.assertRaisesRegex(ValueError,'rate limited'): self.call('/v1/pending',{})
+    def test_startup_refuses_unprotected_or_uncertain_state(self):
+        cert=self.path/'cert.pem'; key=self.path/'tls.pem'
+        subprocess.run(['openssl','req','-x509','-newkey','rsa:2048','-nodes',
+                        '-keyout',str(key),'-out',str(cert),'-days','1',
+                        '-subj','/CN=localhost'],check=True,capture_output=True)
+        key.chmod(0o600)
+        self.assertIsInstance(online.server_context(self.directory,cert,key),ssl.SSLContext)
+        key.chmod(0o644)
+        with self.assertRaisesRegex(ValueError,'private TLS key'):
+            online.server_context(self.directory,cert,key)
+        key.chmod(0o600)
+        self.directory.chmod(0o755)
+        with self.assertRaisesRegex(ValueError,'authority directory'):
+            online.server_context(self.directory,cert,key)
+        self.directory.chmod(0o700)
+        (self.directory/'state.new').write_text('{}')
+        with self.assertRaisesRegex(ValueError,'uncertain ledger'):
+            online.server_context(self.directory,cert,key)
+        (self.directory/'state.new').unlink()
+        (self.directory/'state.json').write_text('{broken')
+        with self.assertRaises(ValueError):
+            online.server_context(self.directory,cert,key)
     def memory_tls(self, server_context, client_context):
         # Sandbox forbids sockets: real OpenSSL TLS records + real HTTP handler in memory.
         def exchange(route, raw, token=None, trust=None, hostname="localhost"):
@@ -133,6 +184,8 @@ class OnlineTests(unittest.TestCase):
         try:
             server=online.TLSHTTPServer(('127.0.0.1',0),context)
         except PermissionError:
+            if os.environ.get('FG_REQUIRE_NETWORK_TESTS') == '1':
+                self.fail('real socket/TLS acceptance required, but socket creation is prohibited')
             self.memory_tls(context, ssl.create_default_context(cafile=str(cert)))
             return
         server.service=self.service

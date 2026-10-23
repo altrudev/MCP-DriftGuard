@@ -62,7 +62,10 @@ class MainActivity : Activity() {
         applyTheme()
         identity = DeviceIdentity(this)
         offline = OfflineApproval(this, ::saveJson)
-        online = OnlineApproval(this, offline) { onlineStatus?.text = it }
+        online = OnlineApproval(this, offline) {
+            onlineStatus?.text = it
+            offlineStatus?.text = offline.status()
+        }
         render()
         if (intent.action != Intent.ACTION_MAIN && intent.action != null) {
             toast("External approval requests are unsupported and refused")

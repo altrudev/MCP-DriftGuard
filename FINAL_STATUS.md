@@ -1,3 +1,5 @@
+> Historical offline repair report. For the v0.5.0 online prototype, current APK and acceptance gates, see [ONLINE_STATUS.md](ONLINE_STATUS.md).
+
 # Frequency Guardian 0.4.0 — Codex functional build, independently revalidated
 
 Codex implemented offline Approve/Deny, independent enrollment verification, revocation checks and signed receipts. Separate post-Codex checks rebuilt 0.4.0 with the **previous debug signer**, ran the full test suites, installed the APK over the pre-existing emulator installation, and launched the app. This is **not** a production-certified release; genuine physical-device security acceptance and downstream execution integration remain open.

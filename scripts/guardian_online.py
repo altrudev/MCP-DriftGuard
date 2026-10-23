@@ -7,6 +7,7 @@ import json
 import os
 import secrets
 import ssl
+import stat
 import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
@@ -71,6 +72,8 @@ class Service:
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.0'
+    server_version = 'Guardian'
+    sys_version = ''
     def log_message(self, *args):
         pass  # No tokens, request bodies or device identifiers in access logs.
     def setup(self):
@@ -101,10 +104,16 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header('Content-Type','application/json')
         self.send_header('Cache-Control','no-store')
+        self.send_header('X-Content-Type-Options','nosniff')
         self.send_header('Content-Length',str(len(body)))
         self.end_headers(); self.wfile.write(body)
+    def send_error(self, code, message=None, explain=None):
+        # Never emit Python version banners, HTML diagnostics or reflected paths.
+        self.close_connection = True
+        self.reply(code, {'error':'refused; no acceptance confirmed'})
 
 class TLSHTTPServer(HTTPServer):
+    request_queue_size = 16
     def __init__(self, address, context):
         self.tls_context = context
         super().__init__(address, Handler)
@@ -116,6 +125,22 @@ class TLSHTTPServer(HTTPServer):
         except BaseException:
             connection.close()
             raise
+
+
+def server_context(directory, cert, key):
+    # Refuse missing, permissive or uncertain authority state before opening a socket.
+    # Startup never initializes an authority or accepts an enrollment implicitly.
+    with g.authority(directory):
+        pass
+    private = Path(key).lstat()
+    if (not stat.S_ISREG(private.st_mode) or private.st_uid != os.getuid()
+            or private.st_mode & 0o077):
+        raise ValueError('owner-controlled private TLS key required')
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
+    context.options |= ssl.OP_NO_COMPRESSION
+    context.load_cert_chain(cert, key)
+    return context
 
 
 def main():
@@ -135,11 +160,9 @@ def main():
         with g.authority(a.directory) as (path, key, policy, state, now):
             print(g.request(path, key, state, now, a.device, action))
         return
-    context=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.minimum_version=ssl.TLSVersion.TLSv1_2
-    context.load_cert_chain(a.cert,a.key)
-    server=TLSHTTPServer((a.bind,a.port),context)
-    server.service=Service(a.directory)
-    server.serve_forever()
+    context = server_context(a.directory, a.cert, a.key)
+    with TLSHTTPServer((a.bind,a.port),context) as server:
+        server.service=Service(a.directory)
+        server.serve_forever()
 if __name__ == '__main__':
     main()

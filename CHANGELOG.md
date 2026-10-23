@@ -1,3 +1,9 @@
+# v0.5.1 — private deployment preparation
+
+- Fix foreground review/pairing state, validation retry and visible enrollment status; preserve existing Android identity and debug signer.
+- Validate private authority/TLS-key state before listening; return generic HTTP refusals and add explicit real-network acceptance mode.
+- Prepare a restricted dedicated systemd unit. Deployment, device acceptance and Git commit are blocked by execution-environment restrictions; see DEPLOYMENT_STATUS.md.
+
 # v0.5.0 — online Android approval prototype
 
 - Explicit HTTPS server pairing and foreground polling, readable signed action review, signed Approve/Deny delivery and durable acceptance lookup.

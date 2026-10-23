@@ -1,0 +1,33 @@
+test_actual_tls_simulated_client_and_http_negatives (test_guardian_online.OnlineTests.test_actual_tls_simulated_client_and_http_negatives) ... FAIL
+
+======================================================================
+FAIL: test_actual_tls_simulated_client_and_http_negatives (test_guardian_online.OnlineTests.test_actual_tls_simulated_client_and_http_negatives)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/ubuntu/guardian-v030-repair/scripts/test_guardian_online.py", line 156, in test_actual_tls_simulated_client_and_http_negatives
+    server=online.TLSHTTPServer(('127.0.0.1',0),context)
+  File "/home/ubuntu/guardian-v030-repair/scripts/guardian_online.py", line 119, in __init__
+    super().__init__(address, Handler)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/socketserver.py", line 453, in __init__
+    self.socket = socket.socket(self.address_family,
+                  ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+                                self.socket_type)
+                                ^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/socket.py", line 236, in __init__
+    _socket.socket.__init__(self, family, type, proto, fileno)
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PermissionError: [Errno 1] Operation not permitted
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/ubuntu/guardian-v030-repair/scripts/test_guardian_online.py", line 159, in test_actual_tls_simulated_client_and_http_negatives
+    self.fail('real socket/TLS acceptance required, but socket creation is prohibited')
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: real socket/TLS acceptance required, but socket creation is prohibited
+
+----------------------------------------------------------------------
+Ran 1 test in 0.099s
+
+FAILED (failures=1)

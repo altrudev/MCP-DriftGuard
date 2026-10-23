@@ -20,12 +20,11 @@ internal class OnlineApproval(private val activity: Activity, private val offlin
     private val worker = Executors.newSingleThreadExecutor()
     private var active = false
     private var busy = false
-    private var reviewing = false
     private var generation = 0
     private val tick = object : Runnable {
         override fun run() {
             if (!active) return
-            if (!busy && !reviewing && !prefs.contains("outbox") && prefs.contains("endpoint")) poll()
+            if (!busy && !offline.reviewing() && !prefs.contains("outbox") && prefs.contains("endpoint") && offline.enrolled()) poll()
             handler.postDelayed(this, 15000)
         }
     }
@@ -40,24 +39,45 @@ internal class OnlineApproval(private val activity: Activity, private val offlin
             }.show()
     }
     fun start() { active = true; handler.removeCallbacks(tick); handler.post(tick) }
-    fun stop() { active = false; generation++; reviewing = false; handler.removeCallbacks(tick) }
+    fun stop() { active = false; generation++; handler.removeCallbacks(tick) }
     fun pair() {
-        check(!busy && !prefs.contains("outbox")) { "Finish/check saved delivery before changing transport pairing" }
+        check(!busy && !offline.reviewing() && !prefs.contains("outbox")) { "Finish/check active review or saved delivery before changing transport pairing" }
         val layout = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
-        val endpoint = EditText(activity).apply { hint = "Independently verified HTTPS origin" }
-        val token = EditText(activity).apply { hint = "Private operator-issued pairing token"; inputType = 129 }
+        val endpoint = EditText(activity).apply {
+            hint = "Independently verified HTTPS origin"
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI
+            setSingleLine(true)
+            setText(prefs.getString("endpoint", ""))
+        }
+        val token = EditText(activity).apply {
+            hint = "Private operator-issued pairing token"; inputType = 129
+            importantForAutofill = android.view.View.IMPORTANT_FOR_AUTOFILL_NO
+            setSingleLine(true)
+        }
         layout.addView(endpoint); layout.addView(token)
-        AlertDialog.Builder(activity).setTitle("Pair approval server")
+        val dialog = AlertDialog.Builder(activity).setTitle("Pair approval server")
             .setMessage("First pin the independent authority and generate/export your attested candidate below. The operator must verify it before issuing this token. Confirm this server address through an authenticated channel. This explicit pairing can replace transport settings; the independently pinned authority and device identity remain required. Pairing does not pin any authority. Tokens are stored privately on this phone; anyone using this unlocked phone can approve.")
-            .setView(layout).setNegativeButton("Cancel", null).setPositiveButton("Pair this server") { _, _ ->
+            .setView(layout).setNegativeButton("Cancel", null).setPositiveButton("Pair this server", null).create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).apply {
+                filterTouchesWhenObscured = true
+                setOnClickListener {
                 runCatching {
                     val origin = OnlineProtocol.endpoint(endpoint.text.toString().trim())
                     val secret = OnlineProtocol.token(token.text.toString().trim())
-                    check(!busy && !prefs.contains("outbox")) { "Finish active delivery first" }
+                    check(!busy && !offline.reviewing() && !prefs.contains("outbox")) { "Finish active review or delivery first" }
                     check(prefs.edit().putString("endpoint", origin).putString("token", secret).commit())
+                    token.text.clear()
+                    dialog.dismiss()
                     if (offline.enrolled()) status("Server paired explicitly; existing signed enrollment retained") else enroll()
-                }.onFailure { status("Pairing refused: ${it.message}") }
-            }.show()
+                }.onFailure {
+                    endpoint.error = "Check the HTTPS origin and private pairing token"
+                    status("Pairing refused: ${it.message}")
+                }
+                }
+            }
+        }
+        dialog.show()
     }
     private fun api(route: String, body: JSONObject): JSONObject {
         val origin = OnlineProtocol.endpoint(prefs.getString("endpoint", null) ?: error("Pair server first"))
@@ -106,17 +126,15 @@ internal class OnlineApproval(private val activity: Activity, private val offlin
     }
     fun poll() = run("/v1/pending", JSONObject()) {
         if (it.isNull("request")) { status("No pending requests. Polls every 15 seconds while visible."); return@run }
-        reviewing = true
         offline.importDocument(it.getString("request")) { receipt, nonce ->
             check(prefs.edit().putString("outbox", receipt).putString("nonce", nonce).commit()) { "Cannot persist delivery; acceptance unknown" }
-            reviewing = false
             status("Signed decision saved; awaiting server confirmation")
             deliver()
         }
         status("Review the signed request. Backgrounding cancels review; tap Check requests to reopen.")
     }
     fun check() {
-        reviewing = false
+        check(!offline.reviewing()) { "Finish or dismiss the active review first" }
         if (prefs.contains("outbox")) {
             run("/v1/status", JSONObject().put("nonce", prefs.getString("nonce", ""))) { confirm(it) }
         } else poll()

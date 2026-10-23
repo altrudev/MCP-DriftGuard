@@ -15,6 +15,7 @@ internal class OfflineApproval(private val activity: Activity, private val expor
     private val candidate = DiagnosticAttestation(activity)
     private var dialog: AlertDialog? = null
     private var pending: String? = null
+    fun reviewing(): Boolean = pending != null
     private fun now(): Long {
         val now = System.currentTimeMillis() / 1000
         check(now >= prefs.getLong("clock", 0)) { "Clock rollback; signing blocked" }
