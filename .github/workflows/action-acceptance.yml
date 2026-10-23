@@ -45,8 +45,8 @@ jobs:
         uses: ./
         with:
           endpoint: ${{ steps.fixture.outputs.endpoint }}
-          baseline: ${{ github.workspace }}/.action-fixture/approved.json
-          verify-key: ${{ github.workspace }}/.action-fixture/trusted.pub.pem
+          baseline: /github/workspace/.action-fixture/approved.json
+          verify-key: /github/workspace/.action-fixture/trusted.pub.pem
           format: json
       - name: Corrupt copied trusted key
         shell: bash
@@ -61,8 +61,8 @@ jobs:
         uses: ./
         with:
           endpoint: ${{ steps.fixture.outputs.endpoint }}
-          baseline: ${{ github.workspace }}/.action-fixture/approved.json
-          verify-key: ${{ github.workspace }}/.action-fixture/invalid.pub.pem
+          baseline: /github/workspace/.action-fixture/approved.json
+          verify-key: /github/workspace/.action-fixture/invalid.pub.pem
       - name: Confirm fail-closed key behavior
         shell: bash
         env:
@@ -82,8 +82,8 @@ jobs:
         uses: ./
         with:
           endpoint: ${{ steps.fixture.outputs.endpoint }}
-          baseline: ${{ github.workspace }}/.action-fixture/approved.json
-          verify-key: ${{ github.workspace }}/.action-fixture/trusted.pub.pem
+          baseline: /github/workspace/.action-fixture/approved.json
+          verify-key: /github/workspace/.action-fixture/trusted.pub.pem
       - name: Confirm drift failed the Action
         shell: bash
         env:
