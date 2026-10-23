@@ -120,3 +120,95 @@ jobs:
           test "$output" = 'mcpdrift dev'
           go version
           echo "NATIVE_SMOKE_PASS platform=${{ matrix.platform }} commit=${{ github.sha }}"
+
+  actual-docker-action:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Set up isolated signed MCP fixture
+        id: fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          go build -o "$RUNNER_TEMP/mcpdrift" ./cmd/mcpdrift
+          go build -o "$RUNNER_TEMP/demo-server" ./examples/demo-server
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq socat
+          MCPDRIFT_DEMO_PORT=8788 "$RUNNER_TEMP/demo-server" > "$RUNNER_TEMP/demo.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/demo.pid"
+          bridge_ip="$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}')"
+          test -n "$bridge_ip"
+          socat TCP-LISTEN:8787,bind="$bridge_ip",fork,reuseaddr TCP:127.0.0.1:8788 > "$RUNNER_TEMP/socat.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/socat.pid"
+          echo "endpoint=http://$bridge_ip:8787/mcp" >> "$GITHUB_OUTPUT"
+          mkdir -p "$GITHUB_WORKSPACE/.action-fixture"
+          "$RUNNER_TEMP/mcpdrift" keygen --private "$RUNNER_TEMP/signing.pem" --public "$GITHUB_WORKSPACE/.action-fixture/trusted.pub.pem"
+          for n in 1 2 3 4 5 6 7 8 9 10; do
+            if "$RUNNER_TEMP/mcpdrift" baseline --sign-key "$RUNNER_TEMP/signing.pem" --output "$GITHUB_WORKSPACE/.action-fixture/approved.json" "http://$bridge_ip:8787/mcp"; then break; fi
+            sleep 1
+          done
+          test -s "$GITHUB_WORKSPACE/.action-fixture/approved.json"
+          chmod a+r "$GITHUB_WORKSPACE/.action-fixture/approved.json" "$GITHUB_WORKSPACE/.action-fixture/trusted.pub.pem"
+      - name: Actual Action, valid signed baseline
+        id: valid
+        uses: ./
+        with:
+          endpoint: ${{ steps.fixture.outputs.endpoint }}
+          baseline: /github/workspace/.action-fixture/approved.json
+          verify-key: /github/workspace/.action-fixture/trusted.pub.pem
+          format: json
+      - name: Corrupt copied trusted key
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .action-fixture/trusted.pub.pem .action-fixture/invalid.pub.pem
+          printf 'invalid-key' > .action-fixture/invalid.pub.pem
+          chmod a+r .action-fixture/invalid.pub.pem
+      - name: Actual Action rejects malformed trusted key
+        id: badkey
+        continue-on-error: true
+        uses: ./
+        with:
+          endpoint: ${{ steps.fixture.outputs.endpoint }}
+          baseline: /github/workspace/.action-fixture/approved.json
+          verify-key: /github/workspace/.action-fixture/invalid.pub.pem
+      - name: Confirm fail-closed key behavior
+        shell: bash
+        env:
+          OBSERVED: ${{ steps.badkey.outcome }}
+        run: test "$OBSERVED" = failure
+      - name: Swap isolated fixture to drift mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          kill "$(cat "$RUNNER_TEMP/demo.pid")"
+          MCPDRIFT_DEMO_PORT=8788 MCPDRIFT_DEMO_DRIFT=1 "$RUNNER_TEMP/demo-server" > "$RUNNER_TEMP/demo-drift.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/demo.pid"
+          sleep 2
+      - name: Actual Action fails on inventory drift
+        id: drift
+        continue-on-error: true
+        uses: ./
+        with:
+          endpoint: ${{ steps.fixture.outputs.endpoint }}
+          baseline: /github/workspace/.action-fixture/approved.json
+          verify-key: /github/workspace/.action-fixture/trusted.pub.pem
+      - name: Confirm drift failed the Action
+        shell: bash
+        env:
+          OBSERVED: ${{ steps.drift.outcome }}
+        run: test "$OBSERVED" = failure
+      - name: Clean temporary fixture
+        if: always()
+        shell: bash
+        run: |
+          for name in demo socat; do
+            if test -f "$RUNNER_TEMP/$name.pid"; then kill "$(cat "$RUNNER_TEMP/$name.pid")" 2>/dev/null || true; fi
+          done

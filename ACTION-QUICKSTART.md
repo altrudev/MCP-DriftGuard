@@ -19,8 +19,8 @@ jobs:
       - uses: altrudev/MCP-DriftGuard@REPLACE_WITH_REVIEWED_FULL_COMMIT_SHA
         with:
           endpoint: https://your-authorized-test.example/mcp
-          baseline: ${{ github.workspace }}/trust/approved-baseline.json
-          verify-key: ${{ github.workspace }}/trust/approved-public-key.pem
+          baseline: /github/workspace/trust/approved-baseline.json
+          verify-key: /github/workspace/trust/approved-public-key.pem
           format: json
 ```
 
