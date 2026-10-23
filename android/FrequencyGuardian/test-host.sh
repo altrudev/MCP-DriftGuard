@@ -7,7 +7,7 @@ mkdir -p "$TMPDIR"
 export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Djava.io.tmpdir=$TMPDIR"
 export FG_TEST_OUT="${FG_BUILD_ROOT:-/dev/shm/frequency-guardian-build}/host-tests"
 mkdir -p "$FG_TEST_OUT"
-fg_kotlinc app/src/main/java/dev/frequency/guardian/Approval.kt app/src/main/java/dev/frequency/guardian/Diagnostics.kt app/src/main/java/dev/frequency/guardian/TrustProtocol.kt tests/FixtureChecks.kt tests/TrustChecks.kt tests/CrossChecks.kt -jvm-target 17 -classpath "$FG_STDLIB" -d "$FG_TEST_OUT/checks.jar"
+fg_kotlinc app/src/main/java/dev/frequency/guardian/Approval.kt app/src/main/java/dev/frequency/guardian/Diagnostics.kt app/src/main/java/dev/frequency/guardian/TrustProtocol.kt app/src/main/java/dev/frequency/guardian/OnlineProtocol.kt tests/OnlineChecks.kt tests/FixtureChecks.kt tests/TrustChecks.kt tests/CrossChecks.kt -jvm-target 17 -classpath "$FG_STDLIB" -d "$FG_TEST_OUT/checks.jar"
 java -cp "$FG_TEST_OUT/checks.jar:$FG_STDLIB" dev.frequency.guardian.FixtureChecksKt
 
 java -cp "$FG_TEST_OUT/checks.jar:$FG_STDLIB" dev.frequency.guardian.TrustChecksKt
@@ -28,3 +28,5 @@ PYTEST
 PYTHONDONTWRITEBYTECODE=1 python3 ../../scripts/guardian_crosscheck.py prepare
 java -cp "$FG_TEST_OUT/checks.jar:$FG_STDLIB" dev.frequency.guardian.CrossChecksKt
 PYTHONDONTWRITEBYTECODE=1 python3 ../../scripts/guardian_crosscheck.py verify
+
+java -cp "$FG_TEST_OUT/checks.jar:$FG_STDLIB" dev.frequency.guardian.OnlineChecksKt

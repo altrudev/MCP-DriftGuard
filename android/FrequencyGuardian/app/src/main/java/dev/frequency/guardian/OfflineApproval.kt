@@ -31,6 +31,7 @@ internal class OfflineApproval(private val activity: Activity, private val expor
         return TrustProtocol.hash(signatures.single().toByteArray())
     }
     private fun revoked(device: String) = prefs.getStringSet("revoked", emptySet())!!.contains(device)
+    fun enrolled(): Boolean = runCatching { grant(); true }.getOrDefault(false)
     fun status(): String = "Offline approval: " + when {
         !prefs.contains("authority") -> "verifier not pinned; blocked"
         !prefs.contains("grant") -> "not enrolled; blocked"
@@ -64,7 +65,7 @@ internal class OfflineApproval(private val activity: Activity, private val expor
         check(!revoked(g.device)) { "Device permanently revoked" }
         return g
     }
-    fun importDocument(text: String) {
+    fun importDocument(text: String, delivery: ((String, String) -> Unit)? = null) {
         check(pending == null) { "Finish or dismiss the pending request" }
         val s = TrustProtocol.verify(text, authority(), now())
         TrustProtocol.bound(s, device(), signer())
@@ -84,14 +85,14 @@ internal class OfflineApproval(private val activity: Activity, private val expor
         val start = android.os.SystemClock.elapsedRealtime()
         pending = text
         dialog = AlertDialog.Builder(activity).setTitle("Review authority request")
-            .setMessage("${s.action}\n\nEnrollment: ${s.enrollment}\nNonce: ${s.nonce}\nExpires: ${java.time.Instant.ofEpochSecond(s.expires)}\nAction SHA-256: ${TrustProtocol.hash(s.action.toByteArray(Charsets.UTF_8))}")
-            .setNegativeButton("Deny") { _, _ -> safe { decide(text, false, start) } }
-            .setPositiveButton("Approve") { _, _ -> safe { decide(text, true, start) } }
+            .setMessage("${s.action.replace(" | ", "\n\n")}\n\nEnrollment: ${s.enrollment}\nNonce: ${s.nonce}\nExpires: ${java.time.Instant.ofEpochSecond(s.expires)}\nAction SHA-256: ${TrustProtocol.hash(s.action.toByteArray(Charsets.UTF_8))}")
+            .setNegativeButton("Deny") { _, _ -> safe { decide(text, false, start, delivery) } }
+            .setPositiveButton("Approve") { _, _ -> safe { decide(text, true, start, delivery) } }
             .setOnDismissListener { pending = null; dialog = null }.show()
         dialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.filterTouchesWhenObscured = true
         dialog?.getButton(AlertDialog.BUTTON_NEGATIVE)?.filterTouchesWhenObscured = true
     }
-    private fun decide(text: String, approved: Boolean, start: Long) {
+    private fun decide(text: String, approved: Boolean, start: Long, delivery: ((String, String) -> Unit)?) {
         check(pending == text && !activity.isFinishing && !activity.isDestroyed)
         check(android.os.SystemClock.elapsedRealtime() - start < 120000) { "Review expired" }
         val s = TrustProtocol.verify(text, authority(), now())
@@ -105,9 +106,10 @@ internal class OfflineApproval(private val activity: Activity, private val expor
         val bytes = TrustProtocol.receipt(s, approved)
         val signature = candidate.signer().run { update(bytes); sign() }
         check(Signature.getInstance("SHA256withECDSA").run { initVerify(candidate.publicKey()); update(bytes); verify(signature) })
-        export("frequency-guardian-decision.json", JSONObject().put("schema", "frequency-guardian-offline-decision/v1")
+        val receipt = JSONObject().put("schema", "frequency-guardian-offline-decision/v1")
             .put("decision", if (approved) "approve" else "deny").put("signed_bytes_b64", bytes.b64())
-            .put("signature_der_b64", signature.b64()).put("device_spki_b64", candidate.publicKey().encoded.b64()).toString(2))
+            .put("signature_der_b64", signature.b64()).put("device_spki_b64", candidate.publicKey().encoded.b64()).toString(2)
+        if (delivery != null) delivery(receipt, s.nonce) else export("frequency-guardian-decision.json", receipt)
     }
     fun revoke() {
         val blocked = prefs.getStringSet("revoked", emptySet())!!.toMutableSet()

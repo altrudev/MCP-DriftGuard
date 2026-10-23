@@ -1,8 +1,13 @@
-# Frequency Guardian — native offline approval repair
+# Frequency Guardian v0.5.0 — online approval prototype
+
+See [online setup and threat model](../../docs/GUARDIAN-ONLINE.md) and
+[validated artifact and outstanding gates](../../ONLINE_STATUS.md).
+The app now has Internet permission for explicit HTTPS pairing and foreground
+polling. Offline import/export remains available. No FCM or telemetry is added.
 
 Native Kotlin Android app, API 30 minimum / target 35, Kotlin 2.0.21, Java 17.
 Approve and Deny use explicit taps, with **no additional biometric/password dialog**.
-The app has no Internet or biometric permission and disables backups and screenshots.
+The app has no biometric permission and disables backups and screenshots.
 Keys are nonexportable Android Keystore P-256, prefer StrongBox, permit TEE fallback,
 and refuse software signing. Newly generated keys require an unlocked device.
 
@@ -38,9 +43,8 @@ ANDROID_SDK_ROOT=/opt/android-sdk ./build-sdk-offline.sh
 ./test-host.sh
 ```
 
-APK: `app/build/outputs/apk/debug/FrequencyGuardian-0.3.0-debug.apk`.
-This is a **debug APK**, with a disposable signing certificate stored only in the
-build area. It is not a production update identity. Keep a stable separately
+APK: `app/build/outputs/apk/debug/FrequencyGuardian-0.5.0-debug.apk`.
+This is a **debug APK**, signed with the prior debug keystore to preserve this test app's update identity. It is not a production release identity. Keep a stable separately
 managed signing key for release/update continuity. Do not confuse the APK signer
 with either on-phone key. Host tests include independent Python ↔ Kotlin encoding
 and ECDSA verification. `cryptography` 46.x is needed for the Python tests/verifier.
@@ -66,7 +70,7 @@ was possible. The root [FINAL_STATUS.md](../../FINAL_STATUS.md) records current
 commands, results, artifact hashes and genuine outstanding acceptance gates.
 Historical build results in BUILD-VALIDATION.md describe earlier artifacts only.
 
-The app does not execute actions or connect to a production broker. A downstream
+The app does not execute actions or connect to a production broker. HTTPS approval transport is available only after explicit pairing. A downstream
 executor must verify a one-use **approve** receipt for exactly the issued action
 and establish its own transaction boundary. A denial or unsigned JSON cannot
 execute anything. Offline phone revocation cannot synchronize itself; revoke on

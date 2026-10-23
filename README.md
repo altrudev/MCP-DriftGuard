@@ -1,3 +1,5 @@
+> Android v0.5.0 online approval prototype: [setup](docs/GUARDIAN-ONLINE.md), [test results and APK](ONLINE_STATUS.md). Explicit HTTPS pairing and foreground polling; no automatic execution or production readiness claim.
+
 # MCP DriftGuard
 
 **Continuous integrity verification for Model Context Protocol (MCP) servers.**

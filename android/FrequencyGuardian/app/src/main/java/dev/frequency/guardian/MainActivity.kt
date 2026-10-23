@@ -18,6 +18,8 @@ import java.time.Instant
 class MainActivity : Activity() {
     private lateinit var column: LinearLayout
     private lateinit var identity: DeviceIdentity
+    private lateinit var online: OnlineApproval
+    private var onlineStatus: TextView? = null
     private lateinit var offline: OfflineApproval
     private var diagnosticDialog: AlertDialog? = null
     private var diagnostics: DiagnosticsReport? = null
@@ -60,6 +62,7 @@ class MainActivity : Activity() {
         applyTheme()
         identity = DeviceIdentity(this)
         offline = OfflineApproval(this, ::saveJson)
+        online = OnlineApproval(this, offline) { onlineStatus?.text = it }
         render()
         if (intent.action != Intent.ACTION_MAIN && intent.action != null) {
             toast("External approval requests are unsupported and refused")
@@ -94,10 +97,17 @@ class MainActivity : Activity() {
             requestApplyInsets()
         })
         label("Frequency Guardian", 28f)
-        label("v${BuildConfig.VERSION_NAME} • Offline approval", 18f)
+        label("v${BuildConfig.VERSION_NAME} • Online approval", 18f)
         offlineStatus = TextView(this).apply { text = offline.status(); textSize = 16f; setPadding(0, 12, 0, 12) }
         column.addView(offlineStatus)
-        label("Offline file workflow. An independent verifier must authorize enrollment and each fresh request. No network connection.")
+        onlineStatus = TextView(this).apply { text = online.initialStatus(); textSize = 18f }
+        column.addView(onlineStatus)
+        button("Pair HTTPS approval server") { online.pair() }
+        button("Fetch signed enrollment") { online.enroll() }
+        button("Check requests / delivery status") { offline.stop(); online.check() }
+        button("Send saved decision") { online.deliver() }
+        button("Discard unconfirmed saved delivery") { online.discard() }
+        label("Setup: pin independent verifier, generate and export attestation, have operator verify it, then pair server and fetch signed enrollment. Review Who / What / Target / Expiry and tap Approve or Deny. No extra password or biometric prompt. Keep app visible for 15-second polling.")
         button("Pin independent verifier") { offline.pin() }
         button("Save candidate enrollment identity") { offline.exportIdentity() }
         button("Import signed enrollment / request / revocation") {
@@ -213,7 +223,10 @@ class MainActivity : Activity() {
         diagnostics?.let { DiagnosticChecks.signed(it, identity.publicKey(), bytes, signed); refreshDiagnostics() }
         toast("Approved local diagnostic only")
     }
+    override fun onDestroy() { online.close(); super.onDestroy() }
+    override fun onStart() { super.onStart(); online.start() }
     override fun onStop() {
+        online.stop()
         offline.stop()
         diagnosticDialog?.dismiss(); diagnosticDialog = null
         super.onStop()
@@ -299,7 +312,7 @@ class MainActivity : Activity() {
     }
     private fun about() {
         AlertDialog.Builder(this).setTitle("About & security • v${BuildConfig.VERSION_NAME}")
-            .setMessage("Native Kotlin • Android 11+\n\nKey: nonexportable Android Keystore P-256, explicit tap approval required in the interface; no per-action biometric or password. StrongBox preferred; TEE fallback reported; software keys cannot sign. No Internet permission, telemetry, backups, or private-key migration. Pairing payload is an unverified diagnostic enrollment candidate, not authorization.\n\nLost phone: recovery must be provisioned BEFORE loss with an independent offline recovery identity and quorum policy. Quorum must revoke the lost key and activate a newly attested device. Offline enrollment requires a separately pinned independent verifier. Local revocation permits a fresh candidate; no automatic recovery or authority replacement is allowed. Do not uninstall or clear storage expecting identity recovery.\n\nGlossary: SPKI = encoded public key; nonce = one-use random challenge; digest = SHA-256 action commitment; attestation = hardware evidence requiring independent verification; quorum = required independent approvals.\n\nIP boundary: repository Apache-2.0/NOTICE applies. No proprietary Frequency/DDC/DSR implementation or branding license is implied. See COMMERCIAL.md and the mobile contract.")
+            .setMessage("Native Kotlin • Android 11+\n\nKey: nonexportable Android Keystore P-256, explicit tap approval required in the interface; no per-action biometric or password. StrongBox preferred; TEE fallback reported; software keys cannot sign. HTTPS foreground polling; no telemetry, backups, or private-key migration. Pairing payload is an unverified diagnostic enrollment candidate, not authorization.\n\nLost phone: recovery must be provisioned BEFORE loss with an independent offline recovery identity and quorum policy. Quorum must revoke the lost key and activate a newly attested device. Offline enrollment requires a separately pinned independent verifier. Local revocation permits a fresh candidate; no automatic recovery or authority replacement is allowed. Do not uninstall or clear storage expecting identity recovery.\n\nGlossary: SPKI = encoded public key; nonce = one-use random challenge; digest = SHA-256 action commitment; attestation = hardware evidence requiring independent verification; quorum = required independent approvals.\n\nIP boundary: repository Apache-2.0/NOTICE applies. No proprietary Frequency/DDC/DSR implementation or branding license is implied. See COMMERCIAL.md and the mobile contract.")
             .setPositiveButton("Close", null).show()
     }
     private fun shareText(text: String) { startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, text) }, "Share public diagnostic data")) }

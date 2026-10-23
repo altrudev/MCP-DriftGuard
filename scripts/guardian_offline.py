@@ -256,6 +256,8 @@ def verify_receipt(directory, state, now, receipt):
         raise ValueError("decision expired during certificate status/signature check")
     state["clock"] = max(state["clock"], now)
     issued["consumed"] = True
+    issued["receipt"] = receipt
+    issued["acceptance"] = {"verified_decision": receipt["decision"], "nonce": nonce, "device": issued["device"], "executed": False}
     atomic_json(directory / "state.json", state)
     return {"verified_decision": receipt["decision"], "nonce": nonce, "device": issued["device"], "executed": False}
 

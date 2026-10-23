@@ -1,3 +1,10 @@
+# v0.5.0 — online Android approval prototype
+
+- Explicit HTTPS server pairing and foreground polling, readable signed action review, signed Approve/Deny delivery and durable acceptance lookup.
+- Reuses independently attested candidate identity, authority/signer binding, revocation and replay enforcement; no automatic execution.
+- Device-scoped random transport tokens, bounded API, rate limits, atomic receipts, negative tests and setup/threat-model documentation.
+- APK retains the prior debug signer; physical-phone and deployment acceptance remain outstanding.
+
 # Changelog
 
 ## v0.1 public preview — 2026-09-14
