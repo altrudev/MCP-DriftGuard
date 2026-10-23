@@ -1,0 +1,37 @@
+{
+  "artifacts": {
+    "darwin-amd64": {
+      "filename": "mcpdrift-darwin-amd64",
+      "sha256": "d63873f5d38d5cc35477aaed047af7bb7612c776f02fbb94e30c8d513f99bb83",
+      "size": 10230512
+    },
+    "darwin-arm64": {
+      "filename": "mcpdrift-darwin-arm64",
+      "sha256": "3b10a9f17d4e00e50a3d51b14bccb4ba7e16b0914b92820455afc4cb152e46aa",
+      "size": 9581938
+    },
+    "linux-amd64": {
+      "filename": "mcpdrift-linux-amd64",
+      "sha256": "d7459d083152c660aa66e5610b47821de8b581df10c33434e250e7788f7a8eed",
+      "size": 10035997
+    },
+    "linux-arm64": {
+      "filename": "mcpdrift-linux-arm64",
+      "sha256": "a629d7ce4acefbf7684a4bb63ea483303ad2e2ea8cb2f19898c186af5d81d6a3",
+      "size": 9351323
+    },
+    "windows-amd64": {
+      "filename": "mcpdrift-windows-amd64.exe",
+      "sha256": "93d735bab3d60239c86ec4193cac0f847a4d4b5c17800c26a9bc4fff98b62c5b",
+      "size": 10167808
+    },
+    "windows-arm64": {
+      "filename": "mcpdrift-windows-arm64.exe",
+      "sha256": "252ae7d779540dbe92e0fa285397e8ffad7b72105bc18bcf9629c5a6cb8b5b66",
+      "size": 9295872
+    }
+  },
+  "commit": "8100533a1db17349fbf699a17fda1f905204581c",
+  "release_authorized": false,
+  "schema": "mcpdrift-artifacts/v1"
+}

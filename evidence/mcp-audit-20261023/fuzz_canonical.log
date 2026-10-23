@@ -1,0 +1,9 @@
+fuzz: elapsed: 0s, gathering baseline coverage: 0/179 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 179/179 completed, now fuzzing with 2 workers
+fuzz: elapsed: 3s, execs: 113442 (37807/sec), new interesting: 22 (total: 201)
+fuzz: elapsed: 6s, execs: 186493 (26936/sec), new interesting: 39 (total: 218)
+--- FAIL: FuzzCanonicalJSON (5.72s)
+    context deadline exceeded
+FAIL
+exit status 1
+FAIL	github.com/altrudev/MCP-DriftGuard/internal/canonical	5.726s

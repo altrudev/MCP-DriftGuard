@@ -325,29 +325,6 @@ pub fn verify_export(
     })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn rejects_bad_der() {
-        for data in [
-            &[0x30, 0x80][..],
-            &[0x30, 0x81, 0],
-            &[0x30, 3, 1],
-            &[0x30, 0, 0],
-            &[0x1f, 0x80, 1, 0],
-        ] {
-            assert!(exact(data, 16).is_err());
-        }
-    }
-    #[test]
-    fn refuses_self_assertions_and_bounds() {
-        assert!(verify_export(&vec![0; 70001], &[0; 32], &[0; 32]).is_err());
-        assert!(verify_export(br#"{"schema":"frequency-guardian-attestation/v2","purpose":"diagnostic-only","production_eligible":true,"attestation_verified":true,"certificates_der_b64":[]}"#, &[0;32], &[0;32]).is_err());
-        assert!(verify_export(b"{}", &[], &[0; 32]).is_err());
-    }
-}
-
 /// Extract canonical P-256 SPKI from a certificate after independent chain verification.
 pub fn candidate_spki(export_json: &[u8]) -> Result<Vec<u8>> {
     if export_json.len() > 70000 {
@@ -554,4 +531,27 @@ pub fn verify_enrollment_policy(export_json: &[u8], minimum_patch: u32) -> Resul
         return Err("OS patch below independent policy".into());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn rejects_bad_der() {
+        for data in [
+            &[0x30, 0x80][..],
+            &[0x30, 0x81, 0],
+            &[0x30, 3, 1],
+            &[0x30, 0, 0],
+            &[0x1f, 0x80, 1, 0],
+        ] {
+            assert!(exact(data, 16).is_err());
+        }
+    }
+    #[test]
+    fn refuses_self_assertions_and_bounds() {
+        assert!(verify_export(&vec![0; 70001], &[0; 32], &[0; 32]).is_err());
+        assert!(verify_export(br#"{"schema":"frequency-guardian-attestation/v2","purpose":"diagnostic-only","production_eligible":true,"attestation_verified":true,"certificates_der_b64":[]}"#, &[0;32], &[0;32]).is_err());
+        assert!(verify_export(b"{}", &[], &[0; 32]).is_err());
+    }
 }

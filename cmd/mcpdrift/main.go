@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/altrudev/MCP-DriftGuard/internal/baseline"
 	"github.com/altrudev/MCP-DriftGuard/internal/canonical"
 	mdiff "github.com/altrudev/MCP-DriftGuard/internal/diff"
+	"github.com/altrudev/MCP-DriftGuard/internal/mcpserver"
 	"github.com/altrudev/MCP-DriftGuard/internal/observe"
 	"github.com/altrudev/MCP-DriftGuard/internal/report"
 )
@@ -26,6 +28,8 @@ func run(args []string) int {
 		return 3
 	}
 	switch args[0] {
+	case "serve":
+		return serve(args[1:])
 	case "inspect":
 		return inspect(args[1:])
 	case "baseline":
@@ -181,15 +185,19 @@ func parseOneEndpoint(fs *flag.FlagSet, args []string) error {
 func failProbe(err error) int      { return fail(err, 3) }
 func fail(err error, code int) int { fmt.Fprintln(os.Stderr, "mcpdrift:", err); return code }
 func usage() {
-	fmt.Fprintln(os.Stderr, "Usage: mcpdrift <inspect|baseline|verify|diff|keygen|version> [options]")
+	fmt.Fprintln(os.Stderr, "Usage: mcpdrift <serve|inspect|baseline|verify|diff|keygen|version> [options]")
 }
 
 func inspectTarget(endpoint, executable, argsJSON string) (canonical.Snapshot, error) {
+	return inspectTargetContext(context.Background(), endpoint, executable, argsJSON)
+}
+
+func inspectTargetContext(ctx context.Context, endpoint, executable, argsJSON string) (canonical.Snapshot, error) {
 	if executable == "" {
 		if endpoint == "stdio" {
 			return canonical.Snapshot{}, errors.New("stdio endpoint requires --stdio-exec")
 		}
-		return observe.New().Inspect(context.Background(), endpoint)
+		return observe.New().Inspect(ctx, endpoint)
 	}
 	if endpoint != "stdio" {
 		return canonical.Snapshot{}, errors.New("stdio executable requires explicit stdio endpoint")
@@ -198,5 +206,47 @@ func inspectTarget(endpoint, executable, argsJSON string) (canonical.Snapshot, e
 	if err := json.Unmarshal([]byte(argsJSON), &args); err != nil {
 		return canonical.Snapshot{}, fmt.Errorf("stdio args must be JSON array: %w", err)
 	}
-	return observe.InspectStdio(context.Background(), executable, args)
+	return observe.InspectStdio(ctx, executable, args)
+}
+
+// serve binds probe authority to startup configuration, never tool arguments.
+func serve(args []string) int {
+	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
+	endpoint := fs.String("endpoint", "", "operator-authorized endpoint (required)")
+	path := fs.String("baseline", "", "approved baseline path (required)")
+	key := fs.String("verify-key", "", "trusted public key PEM")
+	executable := fs.String("stdio-exec", "", "approved stdio executable")
+	argv := fs.String("stdio-args-json", "[]", "approved stdio argument vector")
+	if fs.Parse(args) != nil || fs.NArg() != 0 || *endpoint == "" || *path == "" {
+		return fail(errors.New("serve requires --endpoint and --baseline"), 3)
+	}
+	pub, err := baseline.LoadPublicKey(*key)
+	if err != nil {
+		return fail(err, 4)
+	}
+	approved, err := baseline.Load(*path)
+	if err != nil {
+		return fail(err, 4)
+	}
+	if err = approved.Validate(pub); err != nil {
+		return fail(err, 5)
+	}
+	// Pin the validated artifact in memory for this session. Replacement on disk
+	// cannot silently change which baseline a running agent trusts.
+	call := func(name string) (any, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		live, err := inspectTargetContext(ctx, *endpoint, *executable, *argv)
+		if err != nil {
+			return nil, err
+		}
+		if name == "driftguard_inspect" {
+			return live, nil
+		}
+		return mdiff.Compare(approved.Snapshot, live), nil
+	}
+	if err = mcpserver.Serve(os.Stdin, os.Stdout, version, call); err != nil {
+		return fail(err, 3)
+	}
+	return 0
 }

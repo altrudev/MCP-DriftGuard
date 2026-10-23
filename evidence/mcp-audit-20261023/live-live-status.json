@@ -1,0 +1,17 @@
+{
+  "timestamp_utc": "2026-10-23T14:46:23Z",
+  "session_id": 11958,
+  "transport": "session-backed stdio through mode-0600 FIFO",
+  "input": "/dev/shm/driftguard-live/input",
+  "output": "/dev/shm/driftguard-live/output.jsonl",
+  "binary_sha256": "3a15556ec78b5d25a280a365f697dc333c5411ea7852f1f7ac67cce112dc0c78",
+  "baseline_sha256": "46850862c1d28c8e35aff56cdd645c3081a90ec561fc7246c9ff5908ed093caf",
+  "scope": "synthetic local target only; not production; process lifetime depends on execution session",
+  "signed_baseline": true,
+  "match_observed": true,
+  "drift_fail_observed": true,
+  "resource_read": true,
+  "prompt_get": true,
+  "ping": true,
+  "synthetic_signing_private_key_deleted": true
+}

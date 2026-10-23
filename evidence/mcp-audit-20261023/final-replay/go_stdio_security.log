@@ -1,0 +1,7 @@
+--- FAIL: TestStdioSandboxIsolation (0.00s)
+    stdio_sandbox_linux_test.go:38: sandbox enforcement failed: exit status 1 bwrap: No permissions to create a new namespace, likely because the kernel does not allow non-privileged user namespaces. See <https://deb.li/bubblewrap> or <file:///usr/share/doc/bubblewrap/README.Debian.gz>.
+--- FAIL: TestSandboxEscapedProcessGroupCannotKeepPipeOpen (0.00s)
+    stdio_sandbox_linux_test.go:84: child did not start: <nil>
+FAIL
+FAIL	github.com/altrudev/MCP-DriftGuard/internal/observe	0.032s
+FAIL

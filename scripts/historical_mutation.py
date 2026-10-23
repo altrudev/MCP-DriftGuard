@@ -4,6 +4,7 @@ Runs mutations only in disposable source copies. Never edits the working tree.
 """
 import io
 import json
+import os
 import shutil
 import subprocess
 import tarfile
@@ -45,7 +46,16 @@ CASES=[
   'out = append(out, Change{Low, "description",',
   "./internal/diff","TestFederationB4bParaphrasedAuthorityInstruction"),
 ]
+def go_mutation_detected(completed, test):
+    output = completed.stdout + completed.stderr
+    # A test panic caused by unavailable infrastructure is not a regression
+    # assertion detecting the injected defect.
+    return (completed.returncode != 0 and "--- FAIL: " + test in completed.stdout
+            and "panic:" not in output and "operation not permitted" not in output)
+
 def main():
+    env = dict(os.environ)
+    env["GOFLAGS"] = (env.get("GOFLAGS", "") + " -buildvcs=false").strip()
     revision=subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip()
     output={"format":"mcpdrift-historical-mutation/v1","revision":revision,"cases":[]}
     for name,path,needle,replacement,pkg,test in CASES:
@@ -68,7 +78,7 @@ def main():
             source.write_text(original.replace(needle,replacement,1))
             if pkg=="python_stdio":
                 completed=subprocess.run(["python3","skills/mcp-driftguard/test_stdio_transport.py"],
-                                         cwd=target,capture_output=True,text=True,timeout=95)
+                                         cwd=target,env=env,capture_output=True,text=True,timeout=95)
                 detectable=(completed.returncode != 0 and
                             ("linux_descendant_killed" in (completed.stdout+completed.stderr) or
                              ("subprocess.TimeoutExpired" in completed.stderr and
@@ -76,8 +86,8 @@ def main():
                               "timed out after 35 seconds" in completed.stderr)))
             else:
                 completed=subprocess.run(["go","test",pkg,"-run","^"+test+"$","-count=1"],
-                                         cwd=target,capture_output=True,text=True,timeout=90)
-                detectable=completed.returncode != 0 and "--- FAIL: "+test in completed.stdout
+                                         cwd=target,env=env,capture_output=True,text=True,timeout=90)
+                detectable=go_mutation_detected(completed,test)
             output["cases"].append({"case":name,"passed":detectable,
                                     "test_exit":completed.returncode,
                                     "failure_excerpt":(completed.stdout+completed.stderr)[-450:]})

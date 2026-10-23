@@ -1,0 +1,8 @@
+fuzz: elapsed: 0s, gathering baseline coverage: 0/218 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 218/218 completed, now fuzzing with 2 workers
+fuzz: elapsed: 3s, execs: 80636 (26873/sec), new interesting: 15 (total: 233)
+fuzz: elapsed: 6s, execs: 91042 (3467/sec), new interesting: 15 (total: 233)
+fuzz: elapsed: 9s, execs: 168936 (25965/sec), new interesting: 15 (total: 233)
+fuzz: elapsed: 10s, execs: 200000 (22261/sec), new interesting: 16 (total: 234)
+PASS
+ok  	github.com/altrudev/MCP-DriftGuard/internal/canonical	10.412s

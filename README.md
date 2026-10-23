@@ -2,7 +2,7 @@
 
 # MCP DriftGuard
 
-**Continuous integrity verification for Model Context Protocol (MCP) servers.**
+**Integrity verification for Model Context Protocol (MCP) servers.**
 
 MCP DriftGuard answers a narrow security question:
 
@@ -11,6 +11,13 @@ MCP DriftGuard answers a narrow security question:
 An MCP server can change after review: tools can appear, schemas can widen, descriptions can acquire new authority language, server identity can change, and authorization metadata can move. DriftGuard records a deterministic baseline and compares the live server against it later.
 
 It is intentionally standalone: **no LLM, no DDC dependency, no hosted account, and no telemetry are required.**
+
+The Go CLI also offers an operator-bound MCP stdio server through `mcpdrift serve`.
+It exposes read-only inspection and verification tools, a policy resource and a
+review prompt. See [installation](INSTALL.md) and the execution-specific
+[acceptance matrix](MCP_DRIFTGUARD_ACCEPTANCE.md). Android Guardian is optional and
+is not required for these MCP operations. Remote and production acceptance remains
+unproven.
 
 ## About
 
@@ -29,7 +36,8 @@ v0.1 release candidate. DriftGuard speaks the current MCP 2026-07-28 stateless p
 - Tool annotation changes
 - Security-sensitive description changes
 - Added or removed resources and prompts
-- MCP protocol-version and advertised-version changes\n- TLS certificate and public-key identity changes
+- MCP protocol-version and advertised-version changes
+- TLS certificate and public-key identity changes
 - Authentication challenge changes
 - Protected-resource / authorization metadata changes when captured
 - Endpoint and TLS identity changes

@@ -1,0 +1,8 @@
+ok  	github.com/altrudev/MCP-DriftGuard/cmd/mcpdrift	1.032s
+?   	github.com/altrudev/MCP-DriftGuard/examples/demo-server	[no test files]
+ok  	github.com/altrudev/MCP-DriftGuard/internal/baseline	1.037s
+ok  	github.com/altrudev/MCP-DriftGuard/internal/canonical	1.032s
+ok  	github.com/altrudev/MCP-DriftGuard/internal/diff	1.030s
+ok  	github.com/altrudev/MCP-DriftGuard/internal/mcpserver	1.056s
+ok  	github.com/altrudev/MCP-DriftGuard/internal/observe	1.150s
+ok  	github.com/altrudev/MCP-DriftGuard/internal/report	1.046s

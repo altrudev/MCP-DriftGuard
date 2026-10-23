@@ -87,7 +87,14 @@ export MCPDRIFT_STDIO_ALLOWED_EXEC="$FIXTURE"
 ./mcpdrift verify --stdio-exec "$FIXTURE" --baseline stdio.candidate.json stdio
 ```
 
-For trusted executable arguments, independently approve the exact ordered arguments before invoking the CLI:\n\n```sh\nexport MCPDRIFT_STDIO_ALLOWED_ARGS_JSON='["--safe-option"]'\n./mcpdrift inspect --stdio-exec "$FIXTURE" --stdio-args-json '["--safe-option"]' stdio\n```\n\n**Both the executable path and every argument must match the trusted allowlist.** If no argument authorization is configured, only the empty argument vector is accepted. Never approve a generic interpreter with attacker-controlled script paths or flags. The endpoint argument must be exactly `stdio`; the full executable path and argument vector are committed into the snapshot's endpoint identity. This does not authenticate executable contents; pin a binary digest and review changes in the operator's deployment process.
+For trusted executable arguments, independently approve the exact ordered arguments before invoking the CLI:
+
+```sh
+export MCPDRIFT_STDIO_ALLOWED_ARGS_JSON='["--safe-option"]'
+./mcpdrift inspect --stdio-exec "$FIXTURE" --stdio-args-json '["--safe-option"]' stdio
+```
+
+**Both the executable path and every argument must match the trusted allowlist.** If no argument authorization is configured, only the empty argument vector is accepted. Never approve a generic interpreter with attacker-controlled script paths or flags. The endpoint argument must be exactly `stdio`; the full executable path and argument vector are committed into the snapshot's endpoint identity. This does not authenticate executable contents; pin a binary digest and review changes in the operator's deployment process.
 
 Reproducible local test, without external services:
 
@@ -110,3 +117,63 @@ export MCPDRIFT_ALLOWED_AUTH_ISSUERS="https://auth.example.com"
 
 The variable accepts comma-separated exact URL origins with no path, credentials, query, or fragment. It does not delegate trust to an arbitrary URL path and does not perform OAuth login or token refresh. Same-origin issuer metadata and explicitly approved origins retain normal TLS verification. An unapproved cross-origin issuer causes a failed probe rather than silent acceptance.
 
+
+## DriftGuard as an MCP stdio server
+
+Build the Go binary from this checkout (Go 1.23+):
+
+```sh
+mkdir -p "$HOME/.local/bin"
+go build -trimpath -o "$HOME/.local/bin/mcpdrift" ./cmd/mcpdrift
+```
+
+Use an absolute binary path
+in your MCP host configuration. The host launches one process per stdio session:
+
+```json
+{
+  "mcpServers": {
+    "driftguard": {
+      "command": "/absolute/path/to/mcpdrift",
+      "args": ["serve", "--endpoint", "https://approved.example/mcp", "--baseline", "/trusted/approved.json", "--verify-key", "/trusted/approved.pub.pem"]
+    }
+  }
+}
+```
+
+Replace the example paths and endpoint with operator-authorized values. This is a
+generic MCP host configuration example; host-specific registration is untested.
+The server validates and pins the baseline and verification key at startup. Restart
+the session to adopt a separately approved replacement baseline. Omit `--verify-key`
+only when intentionally using an unsigned baseline through another trusted channel.
+Startup exits 3 for configuration errors, 4 for artifact errors, 5 for integrity
+errors. Stdout carries only newline-delimited JSON-RPC; diagnostics use stderr.
+
+The server provides `driftguard_inspect` and `driftguard_verify` with empty argument
+objects, `driftguard://policy`, and the `review_drift` prompt. It never accepts a
+client-selected endpoint, executable, baseline path, or key. Verification returns
+`match`, `score`, `risk`, and `changes`; a mismatch is a successful tool execution
+whose data reports drift. A probe failure returns `isError: true` with no raw backend
+error or token. Tool errors are inconclusive. The server cannot create or approve
+baselines. Descriptions returned by inspected endpoints remain untrusted data.
+
+For an approved local stdio target use `--endpoint stdio --stdio-exec /approved/server`
+and the exact executable/argument environment allowlists documented above. HTTP
+credentials, if required, come only from the protected process environment. Server
+tools perform outbound read-only discovery, so client-side cancellation cannot undo
+a request already sent. Requests are processed sequentially and discovery uses the
+30-second discovery context (plus up to 10 seconds for TLS identity capture). Input frames are limited to 1 MiB; oversized frames
+terminate the session. Batch JSON-RPC and remote HTTP serving are not implemented.
+No listener, telemetry, cloud registration, Android app, or new VPS is required.
+
+Reproduce official SDK interoperability with Go 1.26+ (test client only):
+
+```sh
+mkdir -p /dev/shm/driftguard-test
+TMPDIR=/dev/shm/driftguard-test python3 scripts/test_mcp_server.py
+```
+
+The SDK client is a separate Go module with pinned dependencies; it is not a core
+runtime dependency. Dependency acquisition may require network on a clean machine.
+The test uses a synthetic local fixture; it does not prove remote client, production
+enrollment, third-party integration or native macOS/Windows acceptance.

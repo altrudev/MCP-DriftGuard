@@ -1,0 +1,235 @@
+{
+  "working_tree_dirty": false,
+  "started_utc": "2026-10-23T14:43:41Z",
+  "base_commit": "6452314d26e25452e475c78bf401e15922ec7ac3",
+  "suites": {
+    "conformance": {
+      "command": [
+        "python3",
+        "scripts/conformance_suite.py",
+        "--output",
+        "/dev/shm/driftguard-final/conformance-final.json"
+      ],
+      "exit": 1,
+      "seconds": 30.45,
+      "log_sha256": "e74250075a39a621b68ee4cb3bd66c8b87c03eca67cd10b6c1b42aca08758782"
+    },
+    "go_core_race": {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./cmd/mcpdrift",
+        "./internal/baseline",
+        "./internal/canonical",
+        "./internal/diff",
+        "./internal/report",
+        "./internal/mcpserver"
+      ],
+      "exit": 0,
+      "seconds": 0.17,
+      "log_sha256": "47b6b35ae3ef11a99dffb3d9bcbcc7420ece9d3aab622a36feb4e0bab156e258"
+    },
+    "go_stdio_security": {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./internal/observe",
+        "-run",
+        "Test(Stdio|Sandbox|RejectEndpointURLCredentialsBeforeNetwork|OAuthIssuerApprovalIsExactOrigin|GuardedDialRejects)"
+      ],
+      "exit": 1,
+      "seconds": 0.82,
+      "log_sha256": "cf2cfd97d6c71593283691f93ba8b761481fc47514c64f15e77810ce9136c33c"
+    },
+    "go_observe_pure": {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./internal/observe",
+        "-run",
+        "Test(StdioTool|StdioSchema|StdioSandboxRejects|RejectEndpointURLCredentialsBeforeNetwork|OAuthIssuerApprovalIsExactOrigin|GuardedDialRejects)"
+      ],
+      "exit": 0,
+      "seconds": 1.72,
+      "log_sha256": "970ed08b460b1a1a620d9f3e4053528f2ecab4c328e6777a3e9598128d3c1dcd"
+    },
+    "go_vet": {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit": 0,
+      "seconds": 0.17,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "sdk_e2e": {
+      "command": [
+        "python3",
+        "scripts/test_mcp_server.py"
+      ],
+      "exit": 0,
+      "seconds": 1.67,
+      "log_sha256": "510bd38fe6e7771695f1dd30f87ca55fddfe763ae39a608afa832e26816f3945"
+    },
+    "python": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts",
+        "-p",
+        "test_*.py"
+      ],
+      "exit": 0,
+      "seconds": 1.47,
+      "log_sha256": "dc1d80eebd1070615527022408ed51fa7035b7cbd4195ba27688e31071f83c72"
+    },
+    "release_mutations": {
+      "command": [
+        "python3",
+        "scripts/test_release_integrity.py"
+      ],
+      "exit": 0,
+      "seconds": 0.12,
+      "log_sha256": "cf8d3a2572a7898fcf32a4c2dd1445509b3d59e66061853243c4627f80695068"
+    },
+    "artifact_mutations": {
+      "command": [
+        "python3",
+        "scripts/test_verify_artifacts.py"
+      ],
+      "exit": 0,
+      "seconds": 0.06,
+      "log_sha256": "d99a3b3e193f653998a65f72eda5408b9a0b4f4d8925a8c72e3d23817c26f9a6"
+    },
+    "historical_mutations": {
+      "command": [
+        "python3",
+        "scripts/historical_mutation.py"
+      ],
+      "exit": 1,
+      "seconds": 40.89,
+      "log_sha256": "91c271d46243096c30aa2c0ed741f88485af791e0f92cbbccf7b32c31459695b"
+    },
+    "codex_host": {
+      "command": [
+        "python3",
+        "scripts/test_codex_clean_config.py"
+      ],
+      "exit": 2,
+      "seconds": 0.06,
+      "log_sha256": "24aa16a46e7edb6e2d0bbba9433f1913831395fa901f89d6938734bf6c69e338"
+    },
+    "rust": {
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "broker/Cargo.toml",
+        "--locked",
+        "--offline"
+      ],
+      "exit": 0,
+      "seconds": 4.6,
+      "log_sha256": "d8b4623cb3612ffedd378bb335a1aabb078bdd44bf1669ee4b0ab49e92b4ff10"
+    },
+    "rust_clippy": {
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "broker/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "seconds": 1.32,
+      "log_sha256": "cf528d1cee1c98ffc42831fcb7fbcbf1b3974ec58ec72b841babe7530029256b"
+    },
+    "rust_fmt": {
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "broker/Cargo.toml",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.22,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cross_build": {
+      "command": [
+        "python3",
+        "scripts/build_artifacts.py",
+        "/dev/shm/driftguard-final/candidates"
+      ],
+      "exit": 0,
+      "seconds": 3.98,
+      "log_sha256": "235428b92563ce6c026fa2327d15dce17af759cb8395f53bb727b4caccd6d0f6"
+    },
+    "verify_candidates": {
+      "command": [
+        "python3",
+        "scripts/verify_artifacts.py",
+        "/dev/shm/driftguard-final/candidates"
+      ],
+      "exit": 0,
+      "seconds": 0.27,
+      "log_sha256": "4b9475f04ae12620fb65c35cc76180a7298a369d19673cf4195a4b6659e97460"
+    },
+    "fuzz_canonical": {
+      "command": [
+        "go",
+        "test",
+        "./internal/canonical",
+        "-run",
+        "^$",
+        "-fuzz",
+        "Fuzz",
+        "-fuzztime=5s",
+        "-parallel=2"
+      ],
+      "exit": 1,
+      "seconds": 6.18,
+      "log_sha256": "8a5d8169c0284dc192c3ee77bd103aab6d3d094783fb6111d7dcc275fc7bf638"
+    }
+  },
+  "supplemental": {
+    "python_with_rust": {
+      "exit": 0,
+      "tests": 43,
+      "skipped": 0,
+      "log": "python-with-rust.log"
+    },
+    "fuzz_bounded_retry": {
+      "exit": 0,
+      "executions": 200000,
+      "log": "fuzz-bounded-retry.log"
+    },
+    "release_gate": {
+      "exit": 1,
+      "verdict": "BLOCKED",
+      "log": "release-gate.log"
+    }
+  },
+  "passed": false,
+  "limitations": [
+    "Socket and namespace creation prohibited",
+    "Codex CLI unavailable",
+    "Remote MCP client, production enrollment and third-party integrations not tested",
+    "Timed fuzz run failed with deadline exceeded; bounded retry passed",
+    "Evidence is locally generated, not an independent external audit"
+  ]
+}
