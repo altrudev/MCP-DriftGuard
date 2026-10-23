@@ -73,3 +73,10 @@ failed execution burning the ID, replay denial, observed verdict/provenance, and
 static fixture success/failure. On 2026-10-22, offline tests pass with unavailable-live
 skips. Required live tests fail on this host because Bubblewrap reports no permission
 to create a namespace. This is an acceptance blocker, not a live execution pass.
+
+## Guardian attestation diagnostic
+
+The separate `guardian-attestation` binary and `attestation` module inspect v0.2
+Android exports offline with an independent challenge and root pin. See
+[protocol and limitations](../docs/FREQUENCY-GUARDIAN-V02.md). No enrollment or
+broker acceptance is enabled. OpenSSL verification failure always denies.

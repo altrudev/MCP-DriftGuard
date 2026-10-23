@@ -48,3 +48,9 @@ The included demo server proves the central behavior:
 MCP DriftGuard Core is licensed under Apache-2.0.
 
 Created by Valentyn Rukhaylo / Altru.dev.
+
+## Frequency Guardian 0.2.0 diagnostic foundations
+
+- Separate attested P-256 candidate with external challenge and explicit bounded public certificate export.
+- Offline independent Rust DER inspection and pinned-root OpenSSL signature verification; no production enrollment.
+- Lost-device recovery specification with pre-provisioned offline recovery key and atomic revocation epoch.

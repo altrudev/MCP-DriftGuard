@@ -1,4 +1,5 @@
-//! Experimental offline authorization and constrained verifier replay. No key generation.
+pub mod attestation;
+// Experimental offline authorization and constrained verifier replay. No key generation.
 pub mod coordinator;
 pub mod runner;
 use base64::{engine::general_purpose::STANDARD, Engine};

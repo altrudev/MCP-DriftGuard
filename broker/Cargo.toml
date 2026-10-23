@@ -1,5 +1,6 @@
 [package]
 name = "driftguard-broker"
+default-run = "driftguard-broker"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,5 +13,4 @@ hex = "=0.4.3"
 base64 = "=0.22.1"
 libc = "=0.2.186"
 
-[dev-dependencies]
 tempfile = "=3.27.0"

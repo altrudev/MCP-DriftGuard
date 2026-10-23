@@ -1,3 +1,27 @@
+# v0.2 validation — 2026-10-23
+
+`ANDROID_SDK_ROOT=/opt/android-sdk ./build-sdk-offline.sh` passed with cached
+Kotlin/SDK tools. APK v3 signature verification passed (one debug signer).
+Artifact: `app/build/sdk-offline/FrequencyGuardian-0.2.0-debug.apk`.
+SHA-256: `0a70239fc3de0ba6627e9b4d965dfd6b9da85141762edafab78b9dac1cb0c101`.
+Version code 2, name 0.2.0, minSdk 30, targetSdk 35. No new permissions.
+`./test-host.sh` passed. Existing deprecation warnings remain.
+
+`CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 cargo test --offline --manifest-path broker/Cargo.toml`
+passed all 23 tests, including pinned-chain cryptography, wrong root pin,
+challenge mismatch, signature corruption and software security-level rejection.
+Disposable test issuer keys are host-only fixtures and confer no device trust.
+An initial debug-symbol Rust build exceeded disk quota; `cargo clean` and the
+bounded build configuration above resolved it without changing source behavior.
+
+No device/emulator runtime validation was performed. Actual Android attestation,
+OEM hardware levels, candidate replacement, unchanged v1 identity after an upgrade,
+metadata warning and Sharesheet flows require physical-device checks. No real
+enrollment, push, merge or network/telemetry was enabled. The historical Gradle
+limitation below still applies; v0.2 was built using the direct SDK fallback.
+
+---
+
 # Build validation — 2026-10-23
 
 ## Produced artifact

@@ -72,6 +72,28 @@ class MainActivity : Activity() {
             button("Share diagnostic pairing payload") { shareText(identity.pairing()) }
             button("Review local signing diagnostic") { review() }
         }
+        label("Attestation candidate: separate P-256 key; no trust or enrollment is enabled.")
+        button("Generate diagnostic attestation candidate") {
+            val input = EditText(this).apply {
+                hint = "Independent verifier challenge: 64 hex characters"
+                filters = arrayOf(android.text.InputFilter.LengthFilter(64))
+                inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            }
+            AlertDialog.Builder(this).setTitle("Replace diagnostic candidate only?")
+                .setMessage("Paste a fresh externally generated random 32-byte challenge. Randomness cannot be verified here. The existing device signing key is preserved. No automatic trust.")
+                .setView(input).setNegativeButton("Cancel", null)
+                .setPositiveButton("Generate") { _, _ -> guarded {
+                    DiagnosticAttestation(this).generate(input.text.toString())
+                    toast("Diagnostic candidate generated; unverified and not enrolled")
+                } }.show()
+        }
+        button("Export diagnostic certificate chain") {
+            AlertDialog.Builder(this).setTitle("Share public attestation evidence?")
+                .setMessage("Certificates can contain identifying device, application and hardware metadata. Share only with a trusted offline reviewer. Export contains public certificates only, no private key, credentials or settings. This does not enroll or trust the device.")
+                .setNegativeButton("Cancel", null).setPositiveButton("Share diagnostic chain") { _, _ -> guarded {
+                    shareText(DiagnosticAttestation(this).export())
+                } }.show()
+        }
         button("Theme: ${settings.getString("theme", "system")}") {
             AlertDialog.Builder(this).setTitle("Appearance").setItems(arrayOf("System", "Light", "Dark")) { _, which ->
                 settings.edit().putString("theme", arrayOf("system", "light", "dark")[which]).apply(); recreate()
@@ -161,7 +183,7 @@ class MainActivity : Activity() {
         }
     }
     private fun about() {
-        AlertDialog.Builder(this).setTitle("About & security • v0.1.0")
+        AlertDialog.Builder(this).setTitle("About & security • v${BuildConfig.VERSION_NAME}")
             .setMessage("Native Kotlin • Android 11+\n\nKey: nonexportable Android Keystore P-256, authentication required for every signature. StrongBox preferred; TEE fallback reported; software keys cannot sign. No Internet permission, telemetry, backups, or private-key migration. Pairing payload is an unverified diagnostic enrollment candidate, not authorization.\n\nLost phone: recovery must be provisioned BEFORE loss with an independent offline recovery identity and quorum policy. Quorum must revoke the lost key and activate a newly attested device. This app cannot perform recovery or production enrollment yet. Do not uninstall or clear storage expecting identity recovery.\n\nGlossary: SPKI = encoded public key; nonce = one-use random challenge; digest = SHA-256 action commitment; attestation = hardware evidence requiring independent verification; quorum = required independent approvals.\n\nIP boundary: repository Apache-2.0/NOTICE applies. No proprietary Frequency/DDC/DSR implementation or branding license is implied. See COMMERCIAL.md and the mobile contract.")
             .setPositiveButton("Close", null).show()
     }

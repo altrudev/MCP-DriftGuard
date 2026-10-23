@@ -1,4 +1,4 @@
-# Frequency Guardian 0.1.0
+# Frequency Guardian 0.2.0
 
 Actual native Kotlin Android app. Android 11/API 30 minimum, target/compile API 35,
 AGP 8.7.3, Kotlin Gradle plugin 2.0.21, Java 17 bytecode. Native platform widgets
@@ -6,7 +6,7 @@ and BiometricPrompt; no third-party runtime UI dependencies. System/light/dark
 appearance, original shield/wave vector icon, about/security and glossary included.
 
 **Diagnostic only.** No production approvals, broker acceptance, live pairing,
-remote attestation or implemented recovery. Read the
+production attestation acceptance or implemented recovery. Read the
 [mobile v1 contract](../../docs/MOBILE-APPROVAL-V1.md) before any future integration.
 The UI creates a short-lived local fixture, displays it, obtains per-operation
 system authentication, signs with Android Keystore and verifies locally. It does
@@ -41,7 +41,7 @@ ANDROID_SDK_ROOT=/opt/android-sdk ./build-sdk-offline.sh
 Override `FG_BUILD_TOOLS` and `FG_MAVEN_CACHE` for other installed paths. It uses aapt2,
 javac, cached Kotlin 2.0.21 compiler, d8, zipalign and apksigner, and creates a disposable debug
 APK signing keystore under ignored build output. It never creates/exports a phone
-approval private key. Result: `app/build/sdk-offline/FrequencyGuardian-0.1.0-debug.apk`.
+approval private key. Result: `app/build/sdk-offline/FrequencyGuardian-0.2.0-debug.apk`.
 This fallback uses the same cached Kotlin 2.0.21 compiler/runtime as the Gradle project. See BUILD-VALIDATION.md for actual build outcomes and limitations.
 
 Host-side security checks (same cached Kotlin compiler, no device required):
@@ -76,7 +76,7 @@ Use the actual pairing host/port and code shown on the phone:
 adb pair PHONE_IP:PAIRING_PORT
 adb connect PHONE_IP:DEBUGGING_PORT
 adb devices
-adb -s PHONE_IP:DEBUGGING_PORT install -r app/build/sdk-offline/FrequencyGuardian-0.1.0-debug.apk
+adb -s PHONE_IP:DEBUGGING_PORT install -r app/build/sdk-offline/FrequencyGuardian-0.2.0-debug.apk
 ```
 
 Pairing and debugging ports differ and may change. Confirm the listed device is
@@ -110,3 +110,10 @@ Root [LICENSE](../../LICENSE), [NOTICE](../../NOTICE) and
 [COMMERCIAL.md](../../COMMERCIAL.md) apply. No proprietary service source or
 branding rights are conveyed. Nonsecret exports contain only schema and theme;
 no private-key migration, key backup, trust import or recovery shortcuts exist.
+
+## v0.2 diagnostic attestation
+
+See [v0.2 evidence and recovery protocol](../../docs/FREQUENCY-GUARDIAN-V02.md)
+for externally supplied challenge generation, explicit certificate export bounds,
+independent pinned-root Rust verification and the future recovery ceremony.
+The candidate is separate from the existing signing key and never enrolls itself.
