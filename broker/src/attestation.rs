@@ -350,12 +350,43 @@ mod tests {
 
 /// Extract canonical P-256 SPKI from a certificate after independent chain verification.
 pub fn candidate_spki(export_json: &[u8]) -> Result<Vec<u8>> {
+    if export_json.len() > 70000 {
+        return Err("oversized attestation export".into());
+    }
     let export: Export = serde_json::from_slice(export_json)?;
+    if export.schema != "frequency-guardian-attestation/v2"
+        || export.purpose != "diagnostic-only"
+        || export.production_eligible
+        || export.attestation_verified
+    {
+        return Err("unsupported export".into());
+    }
     let leaf = STANDARD.decode(export.certificates_der_b64.first().ok_or("missing leaf")?)?;
+    if leaf.is_empty() || leaf.len() > 16384 {
+        return Err("invalid leaf size".into());
+    }
     let cert = children(exact(&leaf, 16)?)?;
-    let tbs = children(*cert.first().ok_or("invalid certificate")?)?;
+    if cert.len() != 3 {
+        return Err("invalid certificate".into());
+    }
+    let tbs = children(cert[0])?;
+    if tbs.first().map(|x| (x.class, x.tag)) != Some((2, 0)) {
+        return Err("not v3 certificate".into());
+    }
     let spki = children(*tbs.get(6).ok_or("missing public key")?)?;
-    let point = spki.get(1).ok_or("missing EC point")?;
+    if spki.len() != 2 {
+        return Err("invalid SPKI".into());
+    }
+    let alg = children(spki[0])?;
+    if alg.len() != 2
+        || alg[0].value != [42, 134, 72, 206, 61, 2, 1]
+        || alg[1].value != [42, 134, 72, 206, 61, 3, 1, 7]
+        || alg[0].tag != 6
+        || alg[1].tag != 6
+    {
+        return Err("not P-256".into());
+    }
+    let point = spki[1];
     if point.tag != 3 || point.class != 0 || point.value.len() != 66 || point.value[..2] != [0, 4] {
         return Err("unsupported point".into());
     }
