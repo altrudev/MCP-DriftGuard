@@ -293,3 +293,8 @@ The `mcpdrift serve` adapter requires an explicit trusted `--verify-key` and a
 signed approved baseline. Missing keys, unsigned artifacts, wrong keys, and
 signature/hash failures stop startup before stdin is read or discovery begins.
 See [stdio server configuration](INSTALL.md#driftguard-as-an-mcp-stdio-server).
+
+For one-shot, read-only monitoring of the existing Frequency Conduit endpoint,
+see [Production monitor operations](docs/PRODUCTION-MONITOR.md). Activation
+requires an independently approved signed baseline and external public trust key;
+the supplied hourly systemd timer is disabled by default.

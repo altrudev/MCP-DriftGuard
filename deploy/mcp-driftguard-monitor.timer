@@ -1,0 +1,11 @@
+[Unit]
+Description=Hourly approved DriftGuard monitoring
+ConditionPathExists=/etc/mcp-driftguard/approved-monitor.json
+
+[Timer]
+OnCalendar=hourly
+AccuracySec=1m
+Unit=mcp-driftguard-monitor.service
+
+[Install]
+WantedBy=timers.target
