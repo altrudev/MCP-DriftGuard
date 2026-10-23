@@ -1,4 +1,4 @@
-# Frequency Guardian 0.2.0
+# Frequency Guardian 0.3.0
 
 Actual native Kotlin Android app. Android 11/API 30 minimum, target/compile API 35,
 AGP 8.7.3, Kotlin Gradle plugin 2.0.21, Java 17 bytecode. Native platform widgets
@@ -41,10 +41,10 @@ ANDROID_SDK_ROOT=/opt/android-sdk ./build-sdk-offline.sh
 Override `FG_BUILD_TOOLS` and `FG_MAVEN_CACHE` for other installed paths. It uses aapt2,
 javac, cached Kotlin 2.0.21 compiler, d8, zipalign and apksigner, and creates a disposable debug
 APK signing keystore under ignored build output. It never creates/exports a phone
-approval private key. Result: `app/build/sdk-offline/FrequencyGuardian-0.2.0-debug.apk`.
+approval private key. Result: `app/build/sdk-offline/FrequencyGuardian-0.3.0-debug.apk`.
 This fallback uses the same cached Kotlin 2.0.21 compiler/runtime as the Gradle project. See BUILD-VALIDATION.md for actual build outcomes and limitations.
 
-Host-side security checks (same cached Kotlin compiler, no device required):
+Host-side security checks (same cached Kotlin compiler and Python 3, no device required):
 
 ```sh
 ./test-host.sh
@@ -76,7 +76,7 @@ Use the actual pairing host/port and code shown on the phone:
 adb pair PHONE_IP:PAIRING_PORT
 adb connect PHONE_IP:DEBUGGING_PORT
 adb devices
-adb -s PHONE_IP:DEBUGGING_PORT install -r app/build/sdk-offline/FrequencyGuardian-0.2.0-debug.apk
+adb -s PHONE_IP:DEBUGGING_PORT install -r app/build/sdk-offline/FrequencyGuardian-0.3.0-debug.apk
 ```
 
 Pairing and debugging ports differ and may change. Confirm the listed device is
@@ -108,7 +108,7 @@ No ADB, emulator or device operation was attempted by the project build.
 
 Root [LICENSE](../../LICENSE), [NOTICE](../../NOTICE) and
 [COMMERCIAL.md](../../COMMERCIAL.md) apply. No proprietary service source or
-branding rights are conveyed. Nonsecret exports contain only schema and theme;
+branding rights are conveyed. Settings exports contain only schema and theme; diagnostics contain public observations;
 no private-key migration, key backup, trust import or recovery shortcuts exist.
 
 ## v0.2 diagnostic attestation
@@ -117,3 +117,10 @@ See [v0.2 evidence and recovery protocol](../../docs/FREQUENCY-GUARDIAN-V02.md)
 for externally supplied challenge generation, explicit certificate export bounds,
 independent pinned-root Rust verification and the future recovery ceremony.
 The candidate is separate from the existing signing key and never enrolls itself.
+
+## v0.3 Run All Diagnostics
+
+The home screen runs all ten checks and shares one JSON attachment with explicit
+pass/fail/pending results. See [v0.3 semantics and acceptance](../../docs/FREQUENCY-GUARDIAN-V03.md).
+Attestation requires an external verifier challenge; certificates are never
+automatically trusted. Recovery and device update acceptance remain pending.

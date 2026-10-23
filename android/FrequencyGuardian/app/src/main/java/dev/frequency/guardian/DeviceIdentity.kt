@@ -44,6 +44,8 @@ internal class DeviceIdentity(private val context: Context) {
         return KeyFactory.getInstance(key.algorithm, "AndroidKeyStore").getKeySpec(key, KeyInfo::class.java)
     }
     fun hardware(): Boolean = if (Build.VERSION.SDK_INT >= 31) info().securityLevel in listOf(KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT, KeyProperties.SECURITY_LEVEL_STRONGBOX) else info().isInsideSecureHardware
+    fun strongBoxStatus(): DiagnosticStatus = if (Build.VERSION.SDK_INT < 31) DiagnosticStatus.PENDING
+        else if (info().securityLevel == KeyProperties.SECURITY_LEVEL_STRONGBOX) DiagnosticStatus.PASS else DiagnosticStatus.FAIL
     fun status(): String {
         val i = info()
         val level = if (Build.VERSION.SDK_INT >= 31) when (i.securityLevel) {

@@ -1,3 +1,36 @@
+# v0.3 validation — 2026-10-23
+
+`./test-host.sh` passed: fixture encoding, nonce/replay/expiry boundaries,
+ECDSA and tamper checks, ten report entries, pending defaults, invalid check
+refusal, JSON escaping and independent Python JSON parser roundtrip.
+
+`ANDROID_SDK_ROOT=/opt/android-sdk ./build-sdk-offline.sh` passed using cached
+SDK/Kotlin tools. Existing platform deprecation warnings remain. APK v3 signature
+verification passed with one signer. Artifact:
+`app/build/sdk-offline/FrequencyGuardian-0.3.0-debug.apk`.
+SHA-256: `7e1827decb5238d59d26a48d035a8ea926808933db8c22243c8f72a781968c3c`.
+
+APK signer certificate SHA-256:
+`22a93e33cfd83c40797240407203c603e54d7cecf1482ea08c55fc33871bd572`,
+identical to the existing v0.2 artifact. Existing debug keystore was reused.
+Packaged launcher icon resources compared byte-for-byte with v0.2; source
+resources and manifest are unchanged. Badging confirms package
+`dev.frequency.guardian`, version code 3/name 0.3.0, minSdk 30/targetSdk 35,
+original launcher icon, and only USE_BIOMETRIC permission.
+
+`CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 cargo test --offline --manifest-path broker/Cargo.toml`
+passed all 23 tests. `git diff --check` passed.
+
+No physical-device/emulator testing occurred. Hardware custody, system prompts,
+Sharesheet export, actual in-place upgrade and identity continuity require device
+acceptance in FREQUENCY-GUARDIAN-V03.md. Recovery remains unimplemented and
+attestation requires an external challenge plus independent trust verification.
+No private keys were exported, no production approval was enabled, and nothing
+was pushed or merged. The direct SDK build was used; Gradle was not rerun because
+of the previously documented IPC limitation below.
+
+---
+
 # v0.2 validation — 2026-10-23
 
 `ANDROID_SDK_ROOT=/opt/android-sdk ./build-sdk-offline.sh` passed with cached

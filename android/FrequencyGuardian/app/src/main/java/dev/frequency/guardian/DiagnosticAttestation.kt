@@ -39,6 +39,20 @@ internal class DiagnosticAttestation(private val context: Context) {
         }
     }
 
+    fun certificateStatus(): DiagnosticResult {
+        val chain = store.getCertificateChain(alias)
+            ?: return DiagnosticResult(DiagnosticStatus.PENDING, "No candidate. Attestation requires a fresh external verifier challenge")
+        return try {
+            export() // Apply the same chain count and byte bounds as the public export.
+            chain.forEach { (it as java.security.cert.X509Certificate).checkValidity() }
+            check((chain.first() as java.security.cert.X509Certificate)
+                .getExtensionValue("1.3.6.1.4.1.11129.2.1.17") != null) { "Android attestation extension missing" }
+            DiagnosticResult(DiagnosticStatus.PENDING, "${chain.size} public certificates within local validity dates; NOT verified. External challenge, pinned-root, revocation and application identity require independent verification")
+        } catch (e: Exception) {
+            DiagnosticResult(DiagnosticStatus.FAIL, e.message ?: "Invalid candidate certificate chain")
+        }
+    }
+
     fun export(): String {
         val chain = store.getCertificateChain(alias) ?: error("Generate a diagnostic candidate first")
         require(chain.size in 2..8) { "Missing or oversized attestation chain" }

@@ -9,12 +9,12 @@ import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import java.io.File
 
-/** Exactly one nonsecret cache file; no arbitrary paths, writes, or key access. */
+/** Allowlisted public cache exports; no arbitrary paths, writes, or key access. */
 class SettingsProvider : ContentProvider() {
     override fun onCreate() = true
     private fun file(uri: Uri): File {
-        require(uri.toString() == "content://${context!!.packageName}.settings/settings.json")
-        return File(context!!.cacheDir, "settings.json")
+        require(uri.toString() in listOf("settings.json", "diagnostics.json").map { "content://${context!!.packageName}.settings/$it" })
+        return File(context!!.cacheDir, uri.lastPathSegment!!)
     }
     override fun getType(uri: Uri): String { file(uri); return "application/json" }
     override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor {
@@ -25,7 +25,7 @@ class SettingsProvider : ContentProvider() {
         val f = file(uri)
         val columns = projection ?: arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE)
         require(columns.all { it == OpenableColumns.DISPLAY_NAME || it == OpenableColumns.SIZE })
-        return MatrixCursor(columns).apply { addRow(columns.map { if (it == OpenableColumns.DISPLAY_NAME) "frequency-guardian-settings.json" else f.length() }) }
+        return MatrixCursor(columns).apply { addRow(columns.map { if (it == OpenableColumns.DISPLAY_NAME) "frequency-guardian-${f.name}" else f.length() }) }
     }
     override fun insert(uri: Uri, values: ContentValues?): Uri? = throw UnsupportedOperationException()
     override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<out String>?): Int = throw UnsupportedOperationException()

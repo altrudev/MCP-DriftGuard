@@ -22,6 +22,38 @@ class MainActivity : Activity() {
     private lateinit var identity: DeviceIdentity
     private var cancellation: CancellationSignal? = null
     private var activeFixture: LocalFixture? = null
+    private var diagnostics: DiagnosticsReport? = null
+    private var diagnosticView: TextView? = null
+    private fun refreshDiagnostics() { diagnosticView?.text = diagnostics?.summary() ?: "Run diagnostics to collect evidence." }
+    private fun runAllDiagnostics() {
+        check(activeFixture == null) { "Authentication already pending" }
+        val report = DiagnosticsReport(BuildConfig.VERSION_NAME)
+        diagnostics = report
+        fun observe(name: String, action: () -> Unit) {
+            try { action() } catch (e: Exception) { report.set(name, DiagnosticStatus.FAIL, e.message ?: "Check failed") }
+        }
+        observe("nonce") { DiagnosticChecks.local(report) }
+        report.set("recovery_readiness", DiagnosticStatus.PENDING, "Recovery ceremony, independent offline identity and quorum are not implemented; not recovery ready")
+        report.set("update", DiagnosticStatus.PENDING, "In-place update requires same package and APK certificate; physical-device upgrade acceptance is still required")
+        report.set("attestation_certificate_status", DiagnosticStatus.PENDING, "External verifier challenge required to generate attestation; chain, pinned root, challenge and revocation require independent verification")
+        observe("attestation_certificate_status") {
+            val status = DiagnosticAttestation(this).certificateStatus()
+            report.set("attestation_certificate_status", status.status, status.detail)
+        }
+        observe("hardware") {
+            identity.provision()
+            report.set("hardware", if (identity.hardware()) DiagnosticStatus.PASS else DiagnosticStatus.FAIL, identity.status())
+            report.set("strongbox", identity.strongBoxStatus(), identity.status())
+            val fingerprint = identity.fingerprint()
+            val baseline = settings.getString("diagnostic-identity-baseline", null)
+            report.set("identity_continuity", when { baseline == null -> DiagnosticStatus.PENDING; baseline == fingerprint -> DiagnosticStatus.PASS; else -> DiagnosticStatus.FAIL },
+                if (baseline == null) "First observation; local baseline recorded: $fingerprint" else "Local baseline comparison; current SPKI SHA-256: $fingerprint. Does not establish remote enrollment or reinstall continuity")
+            if (baseline == null) check(settings.edit().putString("diagnostic-identity-baseline", fingerprint).commit())
+        }
+        refreshDiagnostics()
+        try { authenticate(LocalFixture.create(), report) }
+        catch (e: Exception) { report.set("ecdsa", DiagnosticStatus.FAIL, e.message ?: "Signing unavailable"); refreshDiagnostics() }
+    }
     private val settings get() = getSharedPreferences("nonsecret-settings", MODE_PRIVATE)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,6 +96,20 @@ class MainActivity : Activity() {
         label("Frequency Guardian", 28f)
         label("v${BuildConfig.VERSION_NAME} • Offline diagnostic", 18f)
         label("Production approvals disabled. No broker connection, remote request import, or operational authorization.")
+        button("Run All Diagnostics") { runAllDiagnostics() }
+        diagnosticView = TextView(this).apply { textSize = 15f; setTextIsSelectable(true) }
+        column.addView(diagnosticView)
+        refreshDiagnostics()
+        button("Export diagnostics JSON") {
+            val report = diagnostics ?: error("Run All Diagnostics first")
+            java.io.File(cacheDir, "diagnostics.json").writeText(report.json())
+            val uri = Uri.parse("content://$packageName.settings/diagnostics.json")
+            startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                type = "application/json"; putExtra(Intent.EXTRA_STREAM, uri)
+                clipData = ClipData.newRawUri("Diagnostic results", uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }, "Export diagnostic report (public observations only)"))
+        }
         guarded {
             identity.provision()
             label(identity.status())
@@ -111,7 +157,7 @@ class MainActivity : Activity() {
             .setMessage("Source: generated in this app, not a paired broker.\n\n${String(fixture.action, Charsets.UTF_8)}\n\nNonce: ${fixture.nonce.hex()}\nIssued: ${Instant.ofEpochSecond(fixture.issued)}\nExpires: ${Instant.ofEpochSecond(fixture.expires)}\nAction SHA-256: ${fixture.digest.hex()}\n\nAuthentication signs only this diagnostic domain.")
             .setNegativeButton("Cancel", null).setPositiveButton("Authenticate & sign") { _, _ -> guarded { authenticate(fixture) } }.show()
     }
-    private fun authenticate(fixture: LocalFixture) {
+    private fun authenticate(fixture: LocalFixture, report: DiagnosticsReport? = null) {
         check(activeFixture == null) { "Authentication already pending" }
         fixture.validate(System.currentTimeMillis() / 1000)
         val signer = identity.signer()
@@ -123,30 +169,49 @@ class MainActivity : Activity() {
             .setAllowedAuthenticators(android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_STRONG or android.hardware.biometrics.BiometricManager.Authenticators.DEVICE_CREDENTIAL).build()
         prompt.authenticate(BiometricPrompt.CryptoObject(signer), signal, mainExecutor, object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationError(code: Int, message: CharSequence) {
-                activeFixture = null; cancellation = null; toast("Not signed: $message")
+                activeFixture = null; cancellation = null
+                report?.set("ecdsa", DiagnosticStatus.PENDING, "Authentication cancelled or unavailable: $message")
+                refreshDiagnostics(); toast("Not signed: $message")
             }
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                 val pending = activeFixture
                 activeFixture = null; cancellation = null
                 if (pending !== fixture || isFinishing || isDestroyed) return
-                guarded {
+                try {
                     fixture.validate(System.currentTimeMillis() / 1000)
                     val authorized = result.cryptoObject?.signature ?: error("Missing authenticated signing operation")
                     check(authorized === signer) { "Unexpected signing operation" }
                     authorized.update(fixture.consume(System.currentTimeMillis() / 1000))
                     val signature = authorized.sign()
                     check(Signature.getInstance("SHA256withECDSA").run { initVerify(identity.publicKey()); update(fixture.bytes()); verify(signature) })
+                    if (report != null) {
+                        try { DiagnosticChecks.signed(report, identity.publicKey(), fixture.bytes(), signature) }
+                        catch (e: Exception) { report.set("tampering", DiagnosticStatus.FAIL, e.message ?: "Verification failed") }
+                        refreshDiagnostics()
+                        return
+                    }
                     val receipt = JSONObject().put("schema", "frequency-guardian-diagnostic-signature/v1")
                         .put("production_eligible", false).put("algorithm", "ES256-DER")
                         .put("signed_bytes_b64", fixture.bytes().b64()).put("signature_der_b64", signature.b64())
                         .put("fingerprint_sha256", identity.fingerprint()).toString(2)
                     AlertDialog.Builder(this@MainActivity).setTitle("Diagnostic signature verified locally")
                         .setMessage(receipt).setPositiveButton("Close", null).setNeutralButton("Share") { _, _ -> shareText(receipt) }.show()
+                } catch (e: Exception) {
+                    report?.set("ecdsa", DiagnosticStatus.FAIL, e.message ?: "Signing failed")
+                    refreshDiagnostics()
+                    labelError(e.message ?: "Signing failed")
                 }
             }
         })
     }
-    override fun onStop() { activeFixture = null; cancellation?.cancel(); cancellation = null; super.onStop() }
+    override fun onStop() {
+        if (activeFixture != null) {
+            diagnostics?.takeIf { it.results["ecdsa"]?.status == DiagnosticStatus.PENDING }
+                ?.set("ecdsa", DiagnosticStatus.PENDING, "Interrupted; rerun and complete system authentication")
+            refreshDiagnostics()
+        }
+        activeFixture = null; cancellation?.cancel(); cancellation = null; super.onStop()
+    }
     private fun exportSettings() {
         val json = JSONObject().put("schema", "frequency-guardian-settings/v1").put("theme", settings.getString("theme", "system")).toString(2)
         java.io.File(cacheDir, "settings.json").writeText(json)
