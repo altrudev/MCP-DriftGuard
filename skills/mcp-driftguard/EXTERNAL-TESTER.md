@@ -29,7 +29,19 @@ python3 skills/mcp-driftguard/test_agent_skill.py --ollama-url http://127.0.0.1:
 
 The model output is advisory; the Go verifier remains authoritative.
 
-## Phase B — agent acceptance
+## Phase B — Skills.sh discovery and agent acceptance
+
+On a test machine, first verify the public skill can be discovered; then install it into the chosen agent:
+
+```bash
+npx skills add altrudev/MCP-DriftGuard --list
+npx skills add altrudev/MCP-DriftGuard --skill mcp-driftguard
+```
+
+Use the interactive prompt to choose the agent and installation scope. This step installs the **skill instructions**, not the Go verifier binary. Separately build or install `mcpdrift` from the trusted release/source and confirm `mcpdrift version` before interpreting end-to-end verification as passed. Never install into another person's environment without consent.
+
+The Skills.sh discovery/selection flow has been observed; independent authenticated agent execution is still a separate acceptance gate. Test only against the disposable fixture below, not an employer, production or third-party MCP endpoint.
+
 
 Install the `skills/mcp-driftguard` directory using your agent's current officially documented project-level skill discovery mechanism, **not by executing untrusted setup scripts**. Do not assume the agents share the same folder layout.
 
