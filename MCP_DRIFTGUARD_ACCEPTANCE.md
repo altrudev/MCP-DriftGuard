@@ -249,3 +249,7 @@ record the same infrastructure blocks and successful SDK, core race, configured
 run passed again (200,000 requested executions). The runner exited **1**, correctly
 reflecting incomplete acceptance. Earlier failures remain preserved. Final replay
 candidate hashes are in the adjacent candidate manifest; no release was authorized.
+
+## Authorized VPS real-target verification (subsequent independent run)
+
+Outside Codex's sandbox, direct authorized VPS execution successfully inspected the existing Frequency Conduit `http://127.0.0.1:8765/mcp` endpoint. The independent HTTP discovery and the installed DriftGuard inspector agreed on **six tool names, zero resources and zero prompts**. Both returned success, and the byte-bound result is retained in `evidence/mcp-production-20261023/direct-vps-real-target.json`. This is a real local HTTP connection, not mock testing. It **does not** establish baseline approval, any tool's behavior, trusted provenance, persistent monitoring, or remotely delivered service; approval and monitoring remain disabled.
