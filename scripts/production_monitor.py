@@ -4,9 +4,11 @@ import argparse
 from contextlib import closing
 import fcntl
 import json
+import hashlib
 import os
 from pathlib import Path
 import resource
+import signal
 import sqlite3
 import subprocess
 import tempfile
@@ -39,18 +41,51 @@ def limits():
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 
 
+def bounded_run(command, **kwargs):
+    """Clean the process group on success, failure and timeout (Linux/POSIX)."""
+    timeout = kwargs.pop('timeout')
+    data = kwargs.pop('input', None)
+    with subprocess.Popen(command, start_new_session=True,
+                          stdin=subprocess.PIPE if data is not None else subprocess.DEVNULL,
+                          **kwargs) as process:
+        try:
+            process.communicate(input=data, timeout=timeout)
+            return subprocess.CompletedProcess(command, process.returncode)
+        finally:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            process.wait(timeout=1)
+
+
 def check(cfg, tmp):
     try:
         if cfg.get('approved') is not True:
             raise ValueError('approved must be true')
         for name in ['binary', 'baseline', 'public_key']:
+            if not isinstance(cfg[name], str):
+                raise ValueError(name + ' must be a path string')
             path = Path(cfg[name])
             if not path.is_absolute() or not path.is_file():
                 raise ValueError(name + ' must be an existing absolute file')
+        pins = cfg.get('sha256')
+        if not isinstance(pins, dict):
+            raise ValueError('approved sha256 artifact pins required')
+        for name in ['binary', 'baseline', 'public_key']:
+            expected = pins.get(name)
+            if not isinstance(expected, str) or len(expected) != 64:
+                raise ValueError(name + ' sha256 approval missing')
+            digest = hashlib.sha256()
+            with Path(cfg[name]).open('rb') as artifact:
+                for chunk in iter(lambda: artifact.read(65536), b''):
+                    digest.update(chunk)
+            if digest.hexdigest() != expected:
+                raise ValueError(name + ' differs from approved sha256')
         # Explicit public key required: never permit unsigned verification.
         env = {'PATH': '/usr/bin:/bin', 'TMPDIR': str(tmp), 'GOMEMLIMIT': '192MiB', 'GOMAXPROCS': '2'}
         with tempfile.TemporaryFile(dir=tmp) as output:
-            result = subprocess.run([cfg['binary'], 'verify', '--baseline', cfg['baseline'],
+            result = bounded_run([cfg['binary'], 'verify', '--baseline', cfg['baseline'],
                                      '--verify-key', cfg['public_key'], '--format', 'json', ENDPOINT],
                                     stdout=output, stderr=output, timeout=45, env=env, preexec_fn=limits)
         code = result.returncode
@@ -64,10 +99,45 @@ def check(cfg, tmp):
         return 'error', 'verifier process setup failed'
 
 
+def deliver(db, config, tmp):
+    """At-least-once command delivery. The receiver must deduplicate event IDs."""
+    cfg = json.loads(config.read_text())
+    command = cfg.get('command') if isinstance(cfg, dict) else None
+    if (not isinstance(command, list) or not command or len(command) > 32
+            or not all(isinstance(arg, str) and '\x00' not in arg for arg in command)
+            or not Path(command[0]).is_absolute()):
+        raise ValueError('alert command must be an absolute executable argv')
+    with closing(sqlite3.connect(db, timeout=5)) as conn, conn:
+        conn.execute('PRAGMA synchronous=FULL')
+        conn.execute('create table if not exists delivered (event_id integer primary key)')
+        rows = conn.execute('select id,time,status,detail,action from events where alert=1 '
+                            'and id not in (select event_id from delivered) order by id limit 10').fetchall()
+        deadline = time.monotonic() + 20
+        for row in rows:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return False
+            event = dict(zip(('id', 'time', 'status', 'detail', 'action'), row))
+            try:
+                with tempfile.TemporaryFile(dir=tmp) as output:
+                    result = bounded_run(command, input=json.dumps(event).encode(), stdout=output,
+                        stderr=output, timeout=min(5, remaining), preexec_fn=limits,
+                        env={'PATH': '/usr/bin:/bin', 'TMPDIR': str(tmp)})
+                if result.returncode != 0:
+                    return False
+            except (OSError, subprocess.SubprocessError):
+                return False
+            conn.execute('insert into delivered values(?)', (row[0],))
+            conn.commit()
+        return conn.execute('select count(*) from events where alert=1 and id not in '
+                            '(select event_id from delivered)').fetchone()[0] == 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, required=True)
     parser.add_argument('--state-dir', type=Path, required=True)
+    parser.add_argument('--alert-config', type=Path, help='operator-controlled command receiver config')
     args = parser.parse_args()
     os.umask(0o077)
     args.state_dir.mkdir(parents=True, exist_ok=True)
@@ -89,8 +159,17 @@ def main():
         except (OSError, ValueError) as exc:
             status, detail = 'error', 'configuration: ' + str(exc)[:300]
         record(args.state_dir / 'monitor.sqlite3', status, detail)
-        print(json.dumps({'status': status, 'detail': detail, 'action': ACTIONS[status]}))
-        return 0 if status == 'healthy' else 1
+        delivery = 'unconfigured'
+        if args.alert_config is not None:
+            try:
+                if args.alert_config.stat().st_size > 65536:
+                    raise ValueError('alert configuration exceeds 64 KiB')
+                delivery = 'delivered' if deliver(args.state_dir / 'monitor.sqlite3', args.alert_config, tmp) else 'pending'
+            except (OSError, ValueError, sqlite3.Error):
+                delivery = 'pending'
+        print(json.dumps({'status': status, 'detail': detail, 'action': ACTIONS[status],
+                          'delivery': delivery}))
+        return 0 if status == 'healthy' and delivery != 'pending' else 1
 
 if __name__ == '__main__':
     raise SystemExit(main())

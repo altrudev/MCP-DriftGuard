@@ -1,6 +1,5 @@
 [Unit]
 Description=Read-only Frequency Conduit DriftGuard verification
-ConditionPathExists=/etc/mcp-driftguard/approved-monitor.json
 
 [Service]
 Type=oneshot
@@ -8,8 +7,8 @@ DynamicUser=yes
 StateDirectory=mcp-driftguard-monitor
 StateDirectoryMode=0700
 Environment=TMPDIR=/var/lib/mcp-driftguard-monitor/tmp
-ExecStart=/usr/bin/python3 /opt/mcp-driftguard/scripts/production_monitor.py --config /etc/mcp-driftguard/approved-monitor.json --state-dir /var/lib/mcp-driftguard-monitor
-TimeoutStartSec=60
+ExecStart=/usr/bin/python3 /opt/mcp-driftguard/scripts/production_monitor.py --config /etc/mcp-driftguard/approved-monitor.json --state-dir /var/lib/mcp-driftguard-monitor --alert-config /etc/mcp-driftguard/alerts.json
+TimeoutStartSec=90
 MemoryMax=256M
 MemorySwapMax=0
 CPUQuota=50%
