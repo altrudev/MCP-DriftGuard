@@ -394,3 +394,80 @@ pub fn candidate_spki(export_json: &[u8]) -> Result<Vec<u8>> {
     output.extend_from_slice(&point.value[1..]);
     Ok(output)
 }
+
+/// Verify Android attestationApplicationId (authorization tag 709) against
+/// independently configured package and signing certificate digest.
+pub fn verify_application_id(
+    export_json: &[u8],
+    package: &str,
+    signer_sha256: &[u8],
+) -> Result<()> {
+    if package.is_empty()
+        || package.len() > 200
+        || !package
+            .bytes()
+            .all(|c| c.is_ascii_alphanumeric() || c == b'.' || c == b'_')
+        || signer_sha256.len() != 32
+    {
+        return Err("invalid independent app policy".into());
+    }
+    let export: Export = serde_json::from_slice(export_json)?;
+    let der = STANDARD.decode(export.certificates_der_b64.first().ok_or("missing leaf")?)?;
+    let cert = children(exact(&der, 16)?)?;
+    let tbs = children(*cert.first().ok_or("invalid certificate")?)?;
+    let exts: Vec<_> = tbs.iter().filter(|e| e.class == 2 && e.tag == 3).collect();
+    if exts.len() != 1 {
+        return Err("invalid certificate extensions".into());
+    }
+    let wrappers = children(exts[0].to_owned())?;
+    if wrappers.len() != 1 {
+        return Err("invalid extensions wrapper".into());
+    }
+    let mut description = None;
+    for extension in children(wrappers[0])? {
+        let fields = children(extension)?;
+        if fields.len() < 2 || fields.len() > 3 {
+            return Err("invalid extension fields".into());
+        }
+        if fields[0].tag == 6 && fields[0].value == [43, 6, 1, 4, 1, 214, 121, 2, 1, 17] {
+            if description.is_some() {
+                return Err("duplicate key attestation".into());
+            }
+            description = Some(exact(fields.last().ok_or("missing extension")?.value, 16)?);
+        }
+    }
+    let kd = children(description.ok_or("attestation missing")?)?;
+    if kd.len() != 8 {
+        return Err("invalid key description".into());
+    }
+    let software = children(kd[6])?;
+    let app_ids: Vec<_> = software
+        .iter()
+        .filter(|t| t.class == 2 && t.tag == 709)
+        .collect();
+    if app_ids.len() != 1 {
+        return Err("missing or duplicate attestation application id".into());
+    }
+    let inner = exact(app_ids[0].value, 4)?;
+    let app_fields = children(exact(inner.value, 16)?)?;
+    if app_fields.len() != 2 {
+        return Err("invalid application identity".into());
+    }
+    let packages = children(app_fields[0])?;
+    if packages.len() != 1 {
+        return Err("unexpected shared UID packages".into());
+    }
+    let package_fields = children(packages[0])?;
+    if package_fields.len() != 2
+        || package_fields[0].tag != 4
+        || package_fields[0].value != package.as_bytes()
+        || package_fields[1].tag != 2
+    {
+        return Err("package identity mismatch".into());
+    }
+    let digests = children(app_fields[1])?;
+    if digests.len() != 1 || digests[0].tag != 4 || digests[0].value != signer_sha256 {
+        return Err("signing certificate digest mismatch".into());
+    }
+    Ok(())
+}

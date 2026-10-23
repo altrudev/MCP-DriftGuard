@@ -41,6 +41,8 @@ pub fn verify(
     challenge: &[u8],
     root_pin: &[u8],
     binding_json: &[u8],
+    expected_package: &str,
+    expected_signer_digest: &[u8],
 ) -> Result<Acceptance> {
     if diagnostic_json.len() > 70000 {
         return Err("diagnostic exceeds allowed size".into());
@@ -103,6 +105,7 @@ pub fn verify(
     if !a.chain_signatures_verified_against_supplied_pin || !a.challenge_matches || !a.p256 {
         return Err("incomplete certificate verification".into());
     }
+    attestation::verify_application_id(attestation_json, expected_package, expected_signer_digest)?;
     let spki = attestation::candidate_spki(attestation_json)?;
     crate::guardian_binding::verify_binding(binding_json, challenge, &spki)
         .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
@@ -113,7 +116,7 @@ pub fn verify(
         attestation_chain_verified_against_supplied_pin: true,
         challenge_matches: true,
         candidate_binding_verified: true,
-        independent_application_identity_verified: false,
+        independent_application_identity_verified: true,
         revocation_verified: false,
         recovery_operational: false,
         production_eligible: false,

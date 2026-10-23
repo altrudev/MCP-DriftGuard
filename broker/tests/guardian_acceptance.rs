@@ -22,7 +22,16 @@ fn diagnostic() -> Vec<u8> {
 fn refuses_unverified_or_forged_inputs() {
     let diag = diagnostic();
     let fake = b"{}";
-    assert!(verify(&diag, fake, &[3; 32], &[4; 32], b"{}").is_err());
+    assert!(verify(
+        &diag,
+        fake,
+        &[3; 32],
+        &[4; 32],
+        b"{}",
+        "dev.frequency.guardian",
+        &[5; 32]
+    )
+    .is_err());
     let mut d: serde_json::Value = serde_json::from_slice(&diag).unwrap();
     d["production_eligible"] = json!(true);
     assert!(verify(
@@ -30,7 +39,9 @@ fn refuses_unverified_or_forged_inputs() {
         fake,
         &[3; 32],
         &[4; 32],
-        b"{}"
+        b"{}",
+        "dev.frequency.guardian",
+        &[5; 32],
     )
     .is_err());
     d["production_eligible"] = json!(false);
@@ -40,7 +51,9 @@ fn refuses_unverified_or_forged_inputs() {
         fake,
         &[3; 32],
         &[4; 32],
-        b"{}"
+        b"{}",
+        "dev.frequency.guardian",
+        &[5; 32],
     )
     .is_err());
     d["checks"]["hardware"]["status"] = json!("pass");
@@ -50,7 +63,9 @@ fn refuses_unverified_or_forged_inputs() {
         fake,
         &[3; 32],
         &[4; 32],
-        b"{}"
+        b"{}",
+        "dev.frequency.guardian",
+        &[5; 32],
     )
     .is_err());
 }

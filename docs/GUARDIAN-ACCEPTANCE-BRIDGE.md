@@ -13,3 +13,7 @@ Create an operator-owned directory with `chmod 700`, then run `guardian-challeng
 ## Candidate binding required
 
 The acceptance command now requires a sixth argument `BINDING.json` after the challenge-ledger directory. The verifier compares the candidate key in that binding to the public key extracted from the cryptographically verified attestation leaf and verifies the authenticated signature made by the prior key. Mismatch rejects the entire acceptance operation before marking the issued challenge consumed. This proves a signed association, NOT that the prior key was hardware-attested. The bridge still returns `PENDING_INDEPENDENT_TRUST` until application identity, revocation and recovery are implemented.
+
+## Application identity policy
+
+Independent acceptance also requires `PACKAGE_NAME APK_SIGNING_CERT_SHA256_HEX` as final command arguments. The verifier now examines the Android attestation Application ID (authorization tag 709) and rejects missing/duplicate IDs, shared-UID package ambiguity, incorrect package names and signer fingerprints. Both policy values must be obtained independently of the phone's JSON exports. This check does not replace certificate revocation, recovery activation or deployment approval; diagnostic status remains pending.
