@@ -18,7 +18,6 @@ internal class DiagnosticAttestation(private val context: Context) {
 
     fun generate(challengeHex: String) {
         require(challengeHex.matches(Regex("[0-9a-fA-F]{64}"))) { "Supply exactly 32 random bytes as 64 hex characters from the independent verifier" }
-        check(context.getSystemService(KeyguardManager::class.java).isDeviceSecure) { "Set a device PIN/password first" }
         val challenge = challengeHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
         // Only this disposable diagnostic alias is replaced; the existing device key is untouched.
         store.deleteEntry(alias)
@@ -30,8 +29,7 @@ internal class DiagnosticAttestation(private val context: Context) {
         val spec = KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY)
             .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
             .setDigests(KeyProperties.DIGEST_SHA256)
-            .setUserAuthenticationRequired(true)
-            .setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL)
+            .setUserAuthenticationRequired(false)
             .setAttestationChallenge(challenge)
             .setIsStrongBoxBacked(strong).build()
         KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore").apply {

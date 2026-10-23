@@ -16,12 +16,13 @@ import java.security.spec.ECGenParameterSpec
 import org.json.JSONObject
 
 internal class DeviceIdentity(private val context: Context) {
-    private val alias = "frequency-guardian-diagnostic-p256-v1"
+    private val alias = "frequency-guardian-consent-p256-v2"
+    private val legacyAlias = "frequency-guardian-diagnostic-p256-v1"
     private val store get() = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
     private val prefs get() = context.getSharedPreferences("identity-status", Context.MODE_PRIVATE)
     fun provision() {
-        check(context.getSystemService(KeyguardManager::class.java).isDeviceSecure) { "Set a device PIN/password first" }
         if (store.containsAlias(alias)) return
+        check(!store.containsAlias(legacyAlias)) { "Existing authenticated identity needs an explicitly authorized migration; refusing silent replacement" }
         try {
             generate(true)
             prefs.edit().putString("fallback", "None: StrongBox requested and key generated").commit()
@@ -30,12 +31,15 @@ internal class DeviceIdentity(private val context: Context) {
             prefs.edit().putString("fallback", "StrongBox unavailable; standard Android Keystore fallback used").commit()
         }
     }
+    fun migrateWithConsent() {
+        check(!store.containsAlias(alias)) { "Simple-approval key already present" }
+        try { generate(true) } catch (_: StrongBoxUnavailableException) { generate(false) }
+    }
     private fun generate(strong: Boolean) {
         val spec = KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY)
             .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
             .setDigests(KeyProperties.DIGEST_SHA256)
-            .setUserAuthenticationRequired(true)
-            .setUserAuthenticationParameters(0, KeyProperties.AUTH_BIOMETRIC_STRONG or KeyProperties.AUTH_DEVICE_CREDENTIAL)
+            .setUserAuthenticationRequired(false)
             .setIsStrongBoxBacked(strong).build()
         KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_EC, "AndroidKeyStore").apply { initialize(spec); generateKeyPair() }
     }
