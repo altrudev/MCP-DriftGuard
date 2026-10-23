@@ -1,5 +1,6 @@
 pub mod attestation;
 pub mod guardian_acceptance;
+pub mod guardian_binding;
 pub mod guardian_challenge;
 pub mod recovery;
 // Experimental offline authorization and constrained verifier replay. No key generation.

@@ -128,6 +128,16 @@ class MainActivity : Activity() {
                     toast("Diagnostic candidate generated; unverified and not enrolled")
                 } }.show()
         }
+        button("Sign candidate binding JSON") {
+            val input = EditText(this).apply {
+                hint = "Verifier challenge (64 hex characters)"
+                filters = arrayOf(android.text.InputFilter.LengthFilter(64))
+            }
+            AlertDialog.Builder(this).setTitle("Bind existing key to attested candidate")
+                .setMessage("Use the SAME fresh independent challenge as the attestation candidate. Authenticate to sign the association; no approval or enrollment results.")
+                .setView(input).setNegativeButton("Cancel", null)
+                .setPositiveButton("Authenticate") { _, _ -> guarded { bindCandidate(input.text.toString()) } }.show()
+        }
         button("Save attestation JSON") {
             AlertDialog.Builder(this).setTitle("Save public attestation evidence?")
                 .setMessage("Certificates may contain identifying device and application metadata. Save only to a trusted location. This does not enroll or trust the device.")
@@ -145,6 +155,49 @@ class MainActivity : Activity() {
             startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply { type = "application/json"; addCategory(Intent.CATEGORY_OPENABLE) }, 1)
         }
         button("About, security & recovery") { about() }
+    }
+    private fun bindCandidate(challengeHex: String) {
+        require(challengeHex.matches(Regex("[0-9a-fA-F]{64}"))) { "Expected 64 hexadecimal characters" }
+        check(activeFixture == null && cancellation == null) { "Another authentication is pending" }
+        val candidate = DiagnosticAttestation(this).publicKey().encoded
+        val old = identity.publicKey().encoded
+        check(!candidate.contentEquals(old)) { "Distinct candidate identity required" }
+        val challenge = challengeHex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val msg = "frequency-guardian/attested-candidate-binding/v1\u0000".toByteArray(Charsets.US_ASCII) +
+            challenge + digest.digest(old) + digest.digest(candidate)
+        val signer = identity.signer()
+        val signal = CancellationSignal()
+        cancellation = signal
+        val prompt = BiometricPrompt.Builder(this).setTitle("Sign candidate identity binding")
+            .setSubtitle("Offline evidence only; no enrollment or approval")
+            .setAllowedAuthenticators(android.hardware.biometrics.BiometricManager.Authenticators.BIOMETRIC_STRONG or android.hardware.biometrics.BiometricManager.Authenticators.DEVICE_CREDENTIAL).build()
+        prompt.authenticate(BiometricPrompt.CryptoObject(signer), signal, mainExecutor, object: BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationError(code: Int, message: CharSequence) {
+                cancellation = null
+                toast("Binding cancelled or refused: $message")
+            }
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                cancellation = null
+                if (isFinishing || isDestroyed) return
+                guarded {
+                    val approved = result.cryptoObject?.signature ?: error("No authenticated signature")
+                    check(approved === signer) { "Unexpected signer" }
+                    approved.update(msg)
+                    val signature = approved.sign()
+                    check(Signature.getInstance("SHA256withECDSA").run {
+                        initVerify(identity.publicKey()); update(msg); verify(signature)
+                    }) { "Local binding signature failed" }
+                    val payload = JSONObject().put("schema", "frequency-guardian-candidate-binding/v1")
+                        .put("old_public_key_spki_b64", old.b64())
+                        .put("candidate_public_key_spki_b64", candidate.b64())
+                        .put("challenge_hex", challengeHex.lowercase())
+                        .put("signature_der_b64", signature.b64())
+                        .put("production_eligible", false).toString(2)
+                    saveJson("frequency-guardian-candidate-binding.json", payload)
+                }
+            }
+        })
     }
     private fun review() {
         val fixture = LocalFixture.create()

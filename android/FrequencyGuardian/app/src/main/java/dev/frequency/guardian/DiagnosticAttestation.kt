@@ -39,6 +39,9 @@ internal class DiagnosticAttestation(private val context: Context) {
         }
     }
 
+    fun publicKey(): java.security.PublicKey = store.getCertificate(alias)?.publicKey
+        ?: error("Generate a diagnostic attestation candidate first")
+
     fun certificateStatus(): DiagnosticResult {
         val chain = store.getCertificateChain(alias)
             ?: return DiagnosticResult(DiagnosticStatus.PENDING, "No candidate. Attestation requires a fresh external verifier challenge")
