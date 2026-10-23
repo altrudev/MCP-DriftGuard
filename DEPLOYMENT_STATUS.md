@@ -1,5 +1,8 @@
 # Frequency Guardian deployment status — 2026-10-23 UTC
 
+Continuation from c320c37: see [current gate evidence and rebuilt APK](evidence/continuation-v051/STATUS.md).
+That report supersedes the artifact hash and commit status below.
+
 **Deployment incomplete. No verified Guardian HTTPS URL. Not production ready.**
 This report supersedes earlier deployment claims; ONLINE_STATUS.md records the
 previous v0.5.0 prototype. No service, route, DNS record, authority enrollment or

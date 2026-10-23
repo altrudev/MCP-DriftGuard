@@ -9,6 +9,8 @@ import secrets
 import ssl
 import stat
 import time
+from datetime import datetime, timezone
+from cryptography import x509
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 import guardian_offline as g
@@ -136,6 +138,10 @@ def server_context(directory, cert, key):
     if (not stat.S_ISREG(private.st_mode) or private.st_uid != os.getuid()
             or private.st_mode & 0o077):
         raise ValueError('owner-controlled private TLS key required')
+    leaf = x509.load_pem_x509_certificate(Path(cert).read_bytes())
+    now = datetime.now(timezone.utc)
+    if not leaf.not_valid_before_utc <= now < leaf.not_valid_after_utc:
+        raise ValueError('TLS certificate outside validity period')
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     context.minimum_version = ssl.TLSVersion.TLSv1_2
     context.options |= ssl.OP_NO_COMPRESSION

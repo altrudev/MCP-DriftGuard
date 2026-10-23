@@ -35,6 +35,11 @@ internal class OnlineApproval(private val activity: Activity, private val offlin
         AlertDialog.Builder(activity).setTitle("Discard unconfirmed delivery?")
             .setMessage("Check delivery first. Discarding cannot undo a server acceptance. This request remains consumed locally. Ask the operator to inspect the durable receipt and issue a fresh request if needed.")
             .setNegativeButton("Cancel", null).setPositiveButton("Discard saved delivery") { _, _ ->
+                // A delivery can start after this dialog opens. Never erase its recovery state.
+                if (busy) {
+                    status("Wait for the active connection, then check delivery before discarding.")
+                    return@setPositiveButton
+                }
                 if (prefs.edit().remove("outbox").remove("nonce").commit()) status("Saved delivery discarded; server result may still exist. Check with operator.")
             }.show()
     }

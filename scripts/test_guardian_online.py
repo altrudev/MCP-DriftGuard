@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import threading
 import time
+from datetime import datetime, timezone, timedelta
 import unittest
 import urllib.request
 import urllib.error
@@ -114,6 +115,14 @@ class OnlineTests(unittest.TestCase):
                         '-subj','/CN=localhost'],check=True,capture_output=True)
         key.chmod(0o600)
         self.assertIsInstance(online.server_context(self.directory,cert,key),ssl.SSLContext)
+        # Server-side SSLContext loading alone accepts expired/not-yet-valid certs.
+        # Refuse both before binding, even if the key and authority are valid.
+        clock = datetime.now(timezone.utc)
+        for instant in [clock - timedelta(days=2), clock + timedelta(days=2)]:
+            with self.subTest(instant=instant), patch.object(online, 'datetime') as mocked:
+                mocked.now.return_value = instant
+                with self.assertRaisesRegex(ValueError, 'TLS certificate outside validity'):
+                    online.server_context(self.directory,cert,key)
         key.chmod(0o644)
         with self.assertRaisesRegex(ValueError,'private TLS key'):
             online.server_context(self.directory,cert,key)
