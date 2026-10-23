@@ -1,0 +1,7 @@
+go_unit FAIL
+go_race FAIL
+go_vet FAIL
+docs PASS
+http_acceptance FAIL
+stdio_acceptance FAIL
+extreme_limits FAIL

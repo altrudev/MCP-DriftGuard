@@ -145,8 +145,11 @@ Replace the example paths and endpoint with operator-authorized values. This is 
 generic MCP host configuration example. Isolated Codex CLI registration has been
 verified; actual Codex model tool invocation remains unproven (see the acceptance report).
 The server validates and pins the baseline and verification key at startup. Restart
-the session to adopt a separately approved replacement baseline. Omit `--verify-key`
-only when intentionally using an unsigned baseline through another trusted channel.
+the session to adopt a separately approved replacement baseline. `serve` requires an
+explicit trusted `--verify-key` and a signed baseline that verifies against it.
+Unsigned baselines and missing keys fail closed before reading stdin or probing.
+Obtain the trusted public key through an independent operator-controlled channel;
+a key delivered alongside an untrusted baseline does not establish approval.
 Startup exits 3 for configuration errors, 4 for artifact errors, 5 for integrity
 errors. Stdout carries only newline-delimited JSON-RPC; diagnostics use stderr.
 

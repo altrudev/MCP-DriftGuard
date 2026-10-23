@@ -79,3 +79,22 @@ func TestOversizedFrameAndOutputFailure(t *testing.T) {
 type brokenWriter struct{}
 
 func (brokenWriter) Write(p []byte) (int, error) { return 0, errors.New("output closed") }
+
+func TestNullInitializeIsInvalidParams(t *testing.T) {
+	var out bytes.Buffer
+	if err := Serve(strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":null}`+"\n"), &out, "test", nil); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), `"code":-32602`) {
+		t.Fatal(out.String())
+	}
+}
+func TestInvalidParamsPing(t *testing.T) {
+	var out bytes.Buffer
+	if err := Serve(strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"ping","params":[]}`+"\n"), &out, "test", nil); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), `"code":-32602`) {
+		t.Fatal(out.String())
+	}
+}

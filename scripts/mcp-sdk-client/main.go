@@ -20,13 +20,13 @@ func check(err error) {
 	}
 }
 func main() {
-	if len(os.Args) != 4 {
-		panic("usage: client BINARY FIXTURE APPROVED_BASELINE")
+	if len(os.Args) != 5 {
+		panic("usage: client BINARY FIXTURE APPROVED_BASELINE TRUSTED_PUBLIC_KEY")
 	}
 	binary, fixture, baseline := os.Args[1], os.Args[2], os.Args[3]
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	cmd := exec.Command(binary, "serve", "--endpoint", "stdio", "--stdio-exec", fixture, "--baseline", baseline)
+	cmd := exec.Command(binary, "serve", "--endpoint", "stdio", "--stdio-exec", fixture, "--baseline", baseline, "--verify-key", os.Args[4])
 	cmd.Env = append(os.Environ(), "MCPDRIFT_STDIO_ALLOWED_EXEC="+fixture)
 	session, err := mcp.NewClient(&mcp.Implementation{Name: "driftguard-independent-acceptance", Version: "1"}, nil).Connect(ctx, &mcp.CommandTransport{Command: cmd}, nil)
 	check(err)

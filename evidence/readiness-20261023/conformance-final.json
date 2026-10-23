@@ -1,0 +1,64 @@
+{
+  "arch": "x86_64",
+  "commit": "32ca6c7e1d71bedd64179be7b71bd342038cc39b",
+  "format": "mcpdrift-conformance-evidence/v1",
+  "limitations": [
+    "Local tests are not formal certification",
+    "Federation external rerun remains independently controlled",
+    "Agent-host integration and Windows/macOS native executions not established"
+  ],
+  "passed": false,
+  "platform": "Linux",
+  "suites": {
+    "docs": {
+      "exit": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "c4c25a4d5ec75b9f6c69bde40b1cbb820770ff76af203236dc3377bdff914796",
+      "stdout_tail": "Documentation structure, canonical glossary links, licensing and safety references: PASS\nManual technical terminology and legal review: STILL REQUIRED\n"
+    },
+    "extreme_limits": {
+      "exit": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "a78b5f8aceca245361adacbb434893c8802cfc020b40142c15fd5d0d86ea87fd",
+      "stdout_tail": "  },\n      \"stdout_digest\": \"898f83adcc0bdc9f3b76cc02b7532d3713de8b11d2423871d61212bb2e2fe347\",\n      \"tools\": 10000,\n      \"unchanged_exit\": 0\n    },\n    {\n      \"baseline_unchanged\": true,\n      \"exit_codes\": [\n        0\n      ],\n      \"jobs\": 100,\n      \"kind\": \"concurrent_verification\",\n      \"passed\": true,\n      \"workers\": 8\n    },\n    {\n      \"exit\": 3,\n      \"kind\": \"malformed_discovery\",\n      \"mode\": \"missing\",\n      \"passed\": true,\n      \"seconds\": 0.034\n    },\n    {\n      \"exit\": 3,\n      \"kind\": \"malformed_discovery\",\n      \"mode\": \"cursor-loop\",\n      \"passed\": true,\n      \"seconds\": 0.034\n    },\n    {\n      \"exit\": 3,\n      \"kind\": \"malformed_discovery\",\n      \"mode\": \"wrong-id\",\n      \"passed\": true,\n      \"seconds\": 0.038\n    },\n    {\n      \"exit\": 3,\n      \"kind\": \"malformed_discovery\",\n      \"mode\": \"malformed\",\n      \"passed\": true,\n      \"seconds\": 0.04\n    }\n  ]\n}\n\n"
+    },
+    "go_race": {
+      "exit": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "236a6e3562538c71e2beedef5dfb7394f4724cac30fca7c7f14d5eabc7dc605d",
+      "stdout_tail": "+0x67f\npanic({0x9d2a00?, 0xc00019c4f0?})\n\t/usr/lib/go-1.26/src/runtime/panic.go:860 +0x13a\nnet/http/httptest.newLocalListener()\n\t/usr/lib/go-1.26/src/net/http/httptest/server.go:72 +0x165\nnet/http/httptest.NewUnstartedServer(...)\n\t/usr/lib/go-1.26/src/net/http/httptest/server.go:120\nnet/http/httptest.NewServer({0xa8e3e0, 0xa87e00})\n\t/usr/lib/go-1.26/src/net/http/httptest/server.go:107 +0x2c\ngithub.com/altrudev/MCP-DriftGuard/internal/observe.TestSafeTransportLoopbackAndNoProxy(0xc0001dc6c8)\n\t/home/ubuntu/guardian-v030-repair/internal/observe/dial_policy_test.go:25 +0x8f\ntesting.tRunner(0xc0001dc6c8, 0xa87c70)\n\t/usr/lib/go-1.26/src/testing/testing.go:2036 +0x21d\ncreated by testing.(*T).Run in goroutine 1\n\t/usr/lib/go-1.26/src/testing/testing.go:2101 +0xb13\nFAIL\tgithub.com/altrudev/MCP-DriftGuard/internal/observe\t0.020s\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/report\t(cached)\nFAIL\n"
+    },
+    "go_unit": {
+      "exit": 1,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "bac8042e87072ea0228b8b6657998c3cffa7ea25297c1741fa39ad9a38503cdf",
+      "stdout_tail": "49\npanic({0x79c4e0?, 0x371c4bb0e530?})\n\t/usr/lib/go-1.26/src/runtime/panic.go:860 +0x13a\nnet/http/httptest.newLocalListener()\n\t/usr/lib/go-1.26/src/net/http/httptest/server.go:72 +0xda\nnet/http/httptest.NewUnstartedServer(...)\n\t/usr/lib/go-1.26/src/net/http/httptest/server.go:120\nnet/http/httptest.NewServer({0x851f60, 0x84c090})\n\t/usr/lib/go-1.26/src/net/http/httptest/server.go:107 +0x25\ngithub.com/altrudev/MCP-DriftGuard/internal/observe.TestSafeTransportLoopbackAndNoProxy(0x371c4bc306c8)\n\t/home/ubuntu/guardian-v030-repair/internal/observe/dial_policy_test.go:25 +0x85\ntesting.tRunner(0x371c4bc306c8, 0x84bf00)\n\t/usr/lib/go-1.26/src/testing/testing.go:2036 +0xea\ncreated by testing.(*T).Run in goroutine 1\n\t/usr/lib/go-1.26/src/testing/testing.go:2101 +0x4c5\nFAIL\tgithub.com/altrudev/MCP-DriftGuard/internal/observe\t0.008s\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/report\t(cached)\nFAIL\n"
+    },
+    "go_vet": {
+      "exit": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": ""
+    },
+    "http_acceptance": {
+      "exit": 1,
+      "stderr_sha256": "3f59553f3f4b88522204928c171482575624e36c8f163326d14c184b961ee2db",
+      "stderr_tail": "n\n    with socket.socket() as sock:\n         ~~~~~~~~~~~~~^^\n  File \"/usr/lib/python3.14/socket.py\", line 236, in __init__\n    _socket.socket.__init__(self, family, type, proto, fileno)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 1] Operation not permitted\n",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": ""
+    },
+    "stdio_acceptance": {
+      "exit": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "956693566db314a6052c94604e544746efd7ee6e4424b50e726821cf3c062437",
+      "stdout_tail": "{\n  \"--malformed\": 3,\n  \"--missing-inventory\": 3,\n  \"--repeated-cursor\": 3,\n  \"--wrong-id\": 3,\n  \"bad_args\": 3,\n  \"baseline\": 0,\n  \"baseline_unchanged\": true,\n  \"detected_added_tool\": true,\n  \"drift\": 2,\n  \"env_secret_isolated\": true,\n  \"inspect\": 0,\n  \"inventory\": true,\n  \"linux_descendant_killed\": true,\n  \"pass\": true,\n  \"unapproved_args\": 3,\n  \"unapproved_executable\": 3,\n  \"unchanged\": 0\n}\n"
+    }
+  },
+  "timestamp_utc": "2026-10-23T17:26:10Z"
+}

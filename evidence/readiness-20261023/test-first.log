@@ -1,0 +1,45 @@
+mcpdrift: serve requires --endpoint and --baseline
+mcpdrift: open /home/ubuntu/.cache/ddc-chat-lab/51595881aba347ab95b452eb1cb2857b/TestServeRejectsMissingAndInvalidApprovalBeforeReadingStdin2866317378/001/approved.json: no such file or directory
+mcpdrift: baseline canonical hash mismatch
+mcpdrift: verification key supplied but baseline is unsigned
+mcpdrift: baseline is signed but no verification key was supplied
+mcpdrift: verification key supplied but baseline is unsigned
+mcpdrift: verification key does not match baseline key id
+mcpdrift: baseline canonical hash mismatch
+mcpdrift: open /home/ubuntu/.cache/ddc-chat-lab/51595881aba347ab95b452eb1cb2857b/TestServeTrustBoundary150899061/001/missing: no such file or directory
+--- FAIL: TestServeTrustBoundary (0.00s)
+    --- FAIL: TestServeTrustBoundary/unsigned_missing_key (0.00s)
+        main_test.go:69: got 0 want 3
+    --- FAIL: TestServeTrustBoundary/signed_missing_key (0.00s)
+        main_test.go:69: got 5 want 3
+FAIL
+FAIL	github.com/altrudev/MCP-DriftGuard/cmd/mcpdrift	0.010s
+--- FAIL: TestSaveReplacesSymlinkWithoutTruncatingTarget (0.00s)
+    baseline_test.go:48: save truncated symlink target
+--- FAIL: TestInvalidKeyLengthsReturnErrors (0.00s)
+panic: runtime error: slice bounds out of range [32:1] [recovered, repanicked]
+
+goroutine 10 [running]:
+testing.tRunner.func1.2({0x5f8c00, 0xd0486e50438})
+	/usr/lib/go-1.26/src/testing/testing.go:1974 +0x232
+testing.tRunner.func1()
+	/usr/lib/go-1.26/src/testing/testing.go:1977 +0x349
+panic({0x5f8c00?, 0xd0486e50438?})
+	/usr/lib/go-1.26/src/runtime/panic.go:860 +0x13a
+crypto/ed25519.PrivateKey.Public(...)
+	/usr/lib/go-1.26/src/crypto/ed25519/ed25519.go:64
+github.com/altrudev/MCP-DriftGuard/internal/baseline.New({{0x0, 0x0}, {0x0, 0x0}, {0x0, 0x0}, {{0x0, 0x0}, {0x0, 0x0}, ...}, ...}, ...)
+	/home/ubuntu/guardian-v030-repair/internal/baseline/baseline.go:42 +0x4be
+github.com/altrudev/MCP-DriftGuard/internal/baseline.TestInvalidKeyLengthsReturnErrors(0xd0486f86908)
+	/home/ubuntu/guardian-v030-repair/internal/baseline/baseline_test.go:52 +0xa5
+testing.tRunner(0xd0486f86908, 0x61d9b8)
+	/usr/lib/go-1.26/src/testing/testing.go:2036 +0xea
+created by testing.(*T).Run in goroutine 1
+	/usr/lib/go-1.26/src/testing/testing.go:2101 +0x4c5
+FAIL	github.com/altrudev/MCP-DriftGuard/internal/baseline	0.010s
+--- FAIL: TestInvalidParamsPing (0.00s)
+    server_test.go:91: {"id":1,"jsonrpc":"2.0","result":{}}
+
+FAIL
+FAIL	github.com/altrudev/MCP-DriftGuard/internal/mcpserver	0.008s
+FAIL

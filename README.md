@@ -288,3 +288,8 @@ The audit runner supports `--scope mcp` to exclude optional Guardian/Rust checks
 Production monitoring remains gated on independently trusted, approved artifacts;
 no baseline is approved automatically and no persistent monitor is installed by
 these checks.
+
+The `mcpdrift serve` adapter requires an explicit trusted `--verify-key` and a
+signed approved baseline. Missing keys, unsigned artifacts, wrong keys, and
+signature/hash failures stop startup before stdin is read or discovery begins.
+See [stdio server configuration](INSTALL.md#driftguard-as-an-mcp-stdio-server).

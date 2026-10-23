@@ -214,11 +214,11 @@ func serve(args []string) int {
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
 	endpoint := fs.String("endpoint", "", "operator-authorized endpoint (required)")
 	path := fs.String("baseline", "", "approved baseline path (required)")
-	key := fs.String("verify-key", "", "trusted public key PEM")
+	key := fs.String("verify-key", "", "trusted Ed25519 public key PEM (required)")
 	executable := fs.String("stdio-exec", "", "approved stdio executable")
 	argv := fs.String("stdio-args-json", "[]", "approved stdio argument vector")
-	if fs.Parse(args) != nil || fs.NArg() != 0 || *endpoint == "" || *path == "" {
-		return fail(errors.New("serve requires --endpoint and --baseline"), 3)
+	if fs.Parse(args) != nil || fs.NArg() != 0 || *endpoint == "" || *path == "" || *key == "" {
+		return fail(errors.New("serve requires --endpoint, --baseline and --verify-key"), 3)
 	}
 	pub, err := baseline.LoadPublicKey(*key)
 	if err != nil {

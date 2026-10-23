@@ -57,7 +57,11 @@ func Serve(in io.Reader, out io.Writer, version string, call func(string) (any, 
 					}
 					continue
 				}
+				var params map[string]json.RawMessage
 				switch {
+				case len(req.Params) > 0 && (json.Unmarshal(req.Params, &params) != nil || params == nil):
+					code = -32602
+					message = "Invalid params"
 				case req.Method == "initialize":
 					var p struct {
 						ProtocolVersion string `json:"protocolVersion"`
@@ -81,12 +85,7 @@ func Serve(in io.Reader, out io.Writer, version string, call func(string) (any, 
 					code = -32002
 					message = "Server not initialized"
 				default:
-					var p map[string]json.RawMessage
-					if len(req.Params) > 0 && (json.Unmarshal(req.Params, &p) != nil || p == nil) {
-						code = -32602
-						message = "Invalid params"
-						break
-					}
+					p := params
 					switch req.Method {
 					case "tools/list":
 						tools := []any{}

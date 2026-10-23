@@ -1,0 +1,17 @@
+{
+  "head": "32ca6c7e1d71bedd64179be7b71bd342038cc39b",
+  "working_tree_changes": true,
+  "source_sha256": {
+    "INSTALL.md": "9129056d56a2b2897416892cc1bd4dcc931814c893db792c8cb836591c5ec08a",
+    "README.md": "144ef807591fcf2872fa664b53bb10e4122b533379bac2ed7401cc8cdaa45fdc",
+    "cmd/mcpdrift/main.go": "7a7ec234541b852d0a53104519f2122a755012e0ce82f3da34216a51839526cb",
+    "cmd/mcpdrift/main_test.go": "f5018c47f534feea7e6e0bc0955609efea7228a21f71f6e3a364a57caf5e3a8f",
+    "internal/baseline/baseline.go": "ef80cafce37bfa90714f5f8523671139061b210a5bb5a4aa0deabd81f7706cd9",
+    "internal/baseline/baseline_test.go": "5288d3594cf7ada038620a8663425067b8802c9703ffaf86a03d4f9b3e066175",
+    "internal/mcpserver/server.go": "b1cc603f94a5641bfa9df9e6b7f29274d9ea628f8cef5149f3b2accf4065b1a2",
+    "internal/mcpserver/server_test.go": "74652a6a2ac9cc3f40e72db1a4966a4e73cfe3a77817db966cde6592665e5a34",
+    "scripts/mcp-sdk-client/main.go": "b7b27c3eebdb0cdaf1d4cbc4e504e35a3a59dd53bb3bc29f6181d4a7a5e628e1",
+    "scripts/test_mcp_server.py": "5533d0dac9ed6caa40207e6aef685797489e49f11789a44f969185767b584e3e"
+  },
+  "binary_sha256": "5439dc64d6a5ecf55c480347b8d21af2dd12a194b79ef91f0a9b538b8c71caf0"
+}

@@ -1,0 +1,64 @@
+{
+  "arch": "x86_64",
+  "commit": "32ca6c7e1d71bedd64179be7b71bd342038cc39b",
+  "format": "mcpdrift-conformance-evidence/v1",
+  "limitations": [
+    "Local tests are not formal certification",
+    "Federation external rerun remains independently controlled",
+    "Agent-host integration and Windows/macOS native executions not established"
+  ],
+  "passed": false,
+  "platform": "Linux",
+  "suites": {
+    "docs": {
+      "exit": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "c4c25a4d5ec75b9f6c69bde40b1cbb820770ff76af203236dc3377bdff914796",
+      "stdout_tail": "Documentation structure, canonical glossary links, licensing and safety references: PASS\nManual technical terminology and legal review: STILL REQUIRED\n"
+    },
+    "extreme_limits": {
+      "exit": 1,
+      "stderr_sha256": "baf0bceed3442d57555ff11e1506c4a2c9783f6f5982136fdbfd18c300ef8bfa",
+      "stderr_tail": "uardian-v030-repair/scripts/extreme_limits.py\", line 136, in <module>\n    raise SystemExit(main())\n                     ~~~~^^\n  File \"/home/ubuntu/guardian-v030-repair/scripts/extreme_limits.py\", line 68, in main\n    raise RuntimeError(\"Go binary build failed\")\nRuntimeError: Go binary build failed\n",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": ""
+    },
+    "go_race": {
+      "exit": 1,
+      "stderr_sha256": "fad35cab745a7fe3f8f3160d8fc01f93785812a22c7a8745fa213c98ce5979dc",
+      "stderr_tail": "# ./...\npattern ./...: open /home/ubuntu/.cache/go-build/c9/c9be6d82867268c62afe29ad6279d8257ade0a628f802df30110c54391c92a95-a: read-only file system\n",
+      "stdout_sha256": "771d8c9031e0675196ded606f5efa64e94a64d9424bf39bdfb4d21b24ab5a881",
+      "stdout_tail": "+0x67f\npanic({0x9d2a00?, 0xc00003c530?})\n\t/usr/lib/go-1.26/src/runtime/panic.go:860 +0x13a\nnet/http/httptest.newLocalListener()\n\t/usr/lib/go-1.26/src/net/http/httptest/server.go:72 +0x165\nnet/http/httptest.NewUnstartedServer(...)\n\t/usr/lib/go-1.26/src/net/http/httptest/server.go:120\nnet/http/httptest.NewServer({0xa8e3e0, 0xa87e00})\n\t/usr/lib/go-1.26/src/net/http/httptest/server.go:107 +0x2c\ngithub.com/altrudev/MCP-DriftGuard/internal/observe.TestSafeTransportLoopbackAndNoProxy(0xc0000de6c8)\n\t/home/ubuntu/guardian-v030-repair/internal/observe/dial_policy_test.go:25 +0x8f\ntesting.tRunner(0xc0000de6c8, 0xa87c70)\n\t/usr/lib/go-1.26/src/testing/testing.go:2036 +0x21d\ncreated by testing.(*T).Run in goroutine 1\n\t/usr/lib/go-1.26/src/testing/testing.go:2101 +0xb13\nFAIL\tgithub.com/altrudev/MCP-DriftGuard/internal/observe\t0.020s\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/report\t(cached)\nFAIL\n"
+    },
+    "go_unit": {
+      "exit": 1,
+      "stderr_sha256": "fad35cab745a7fe3f8f3160d8fc01f93785812a22c7a8745fa213c98ce5979dc",
+      "stderr_tail": "# ./...\npattern ./...: open /home/ubuntu/.cache/go-build/c9/c9be6d82867268c62afe29ad6279d8257ade0a628f802df30110c54391c92a95-a: read-only file system\n",
+      "stdout_sha256": "cc0f484ff869c2caf06f478df2ae633402ee9f958f3cd5c8fec40efaecdd69e6",
+      "stdout_tail": "49\npanic({0x79c4e0?, 0x2625c9b10530?})\n\t/usr/lib/go-1.26/src/runtime/panic.go:860 +0x13a\nnet/http/httptest.newLocalListener()\n\t/usr/lib/go-1.26/src/net/http/httptest/server.go:72 +0xda\nnet/http/httptest.NewUnstartedServer(...)\n\t/usr/lib/go-1.26/src/net/http/httptest/server.go:120\nnet/http/httptest.NewServer({0x851f60, 0x84c090})\n\t/usr/lib/go-1.26/src/net/http/httptest/server.go:107 +0x25\ngithub.com/altrudev/MCP-DriftGuard/internal/observe.TestSafeTransportLoopbackAndNoProxy(0x2625c9c326c8)\n\t/home/ubuntu/guardian-v030-repair/internal/observe/dial_policy_test.go:25 +0x85\ntesting.tRunner(0x2625c9c326c8, 0x84bf00)\n\t/usr/lib/go-1.26/src/testing/testing.go:2036 +0xea\ncreated by testing.(*T).Run in goroutine 1\n\t/usr/lib/go-1.26/src/testing/testing.go:2101 +0x4c5\nFAIL\tgithub.com/altrudev/MCP-DriftGuard/internal/observe\t0.007s\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/report\t(cached)\nFAIL\n"
+    },
+    "go_vet": {
+      "exit": 1,
+      "stderr_sha256": "c306b8642949b65166416b3761f7ec0ef67de97e7ccad0002070816f84f97e08",
+      "stderr_tail": "pattern ./...: open /home/ubuntu/.cache/go-build/c9/c9be6d82867268c62afe29ad6279d8257ade0a628f802df30110c54391c92a95-a: read-only file system\n",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": ""
+    },
+    "http_acceptance": {
+      "exit": 1,
+      "stderr_sha256": "90e5af5f573537454764604ef1f91de33f4b8fe64c82278b8a087c98b0dfd957",
+      "stderr_tail": "n-v030-repair/skills/mcp-driftguard/test_agent_skill.py\", line 59, in main\n    raise RuntimeError(name+\" build failed: \"+stderr[:600])\nRuntimeError: verifier build failed: open /home/ubuntu/.cache/go-build/c9/c9be6d82867268c62afe29ad6279d8257ade0a628f802df30110c54391c92a95-a: read-only file system\n\n",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": ""
+    },
+    "stdio_acceptance": {
+      "exit": 1,
+      "stderr_sha256": "54f76ce50b14ba2449860bd23ac613fb1ed172eb30bf2926d4580db24460615a",
+      "stderr_tail": "/test_stdio_transport.py\", line 22, in main\n    if build.returncode:raise RuntimeError(build.stderr)\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: open /home/ubuntu/.cache/go-build/c9/c9be6d82867268c62afe29ad6279d8257ade0a628f802df30110c54391c92a95-a: read-only file system\n\n",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": ""
+    }
+  },
+  "timestamp_utc": "2026-10-23T17:24:23Z"
+}

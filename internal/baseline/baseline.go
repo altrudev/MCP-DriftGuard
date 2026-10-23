@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/altrudev/MCP-DriftGuard/internal/canonical"
@@ -33,6 +34,9 @@ type Signature struct {
 }
 
 func New(snapshot canonical.Snapshot, privateKey ed25519.PrivateKey) (Artifact, error) {
+	if len(privateKey) != 0 && len(privateKey) != ed25519.PrivateKeySize {
+		return Artifact{}, errors.New("invalid Ed25519 private key length")
+	}
 	h, err := canonical.Hash(snapshot)
 	if err != nil {
 		return Artifact{}, err
@@ -47,6 +51,9 @@ func New(snapshot canonical.Snapshot, privateKey ed25519.PrivateKey) (Artifact, 
 }
 
 func (a Artifact) Validate(publicKey ed25519.PublicKey) error {
+	if len(publicKey) != 0 && len(publicKey) != ed25519.PublicKeySize {
+		return errors.New("invalid Ed25519 public key length")
+	}
 	if a.Format != "mcpdrift-baseline/v1" {
 		return fmt.Errorf("unsupported baseline format %q", a.Format)
 	}
@@ -87,7 +94,32 @@ func Save(path string, a Artifact) error {
 		return err
 	}
 	b = append(b, '\n')
-	return os.WriteFile(path, b, 0o644)
+	// Write beside the destination so rename is atomic and readers never see a
+	// partially written artifact. Rename replaces a symlink, never its target.
+	f, err := os.CreateTemp(filepath.Dir(path), ".mcpdrift-baseline-*")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(f.Name())
+	defer f.Close()
+	if _, err = f.Write(b); err != nil {
+		return err
+	}
+	if err = f.Sync(); err != nil {
+		return err
+	}
+	if err = f.Close(); err != nil {
+		return err
+	}
+	if err = os.Rename(f.Name(), path); err != nil {
+		return err
+	}
+	dir, err := os.Open(filepath.Dir(path))
+	if err != nil {
+		return err
+	}
+	defer dir.Close()
+	return dir.Sync()
 }
 
 func Load(path string) (Artifact, error) {
