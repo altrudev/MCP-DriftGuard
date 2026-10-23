@@ -142,7 +142,8 @@ in your MCP host configuration. The host launches one process per stdio session:
 ```
 
 Replace the example paths and endpoint with operator-authorized values. This is a
-generic MCP host configuration example; host-specific registration is untested.
+generic MCP host configuration example. Isolated Codex CLI registration has been
+verified; actual Codex model tool invocation remains unproven (see the acceptance report).
 The server validates and pins the baseline and verification key at startup. Restart
 the session to adopt a separately approved replacement baseline. Omit `--verify-key`
 only when intentionally using an unsigned baseline through another trusted channel.
@@ -177,3 +178,52 @@ The SDK client is a separate Go module with pinned dependencies; it is not a cor
 runtime dependency. Dependency acquisition may require network on a clean machine.
 The test uses a synthetic local fixture; it does not prove remote client, production
 enrollment, third-party integration or native macOS/Windows acceptance.
+
+
+## Local operational acceptance without baseline approval
+
+To compare the installed inspector with an independent JSON HTTP discovery client
+against an already authorized local service:
+
+```sh
+python3 scripts/probe_local_mcp.py \
+  --endpoint http://127.0.0.1:8765/mcp \
+  --binary "$HOME/.local/bin/mcpdrift" --output local-discovery.json
+```
+
+Use an existing operator-selected endpoint. This probe accepts only explicit
+loopback HTTP IP addresses, disables proxies and redirects, does not use credentials,
+and sends only initialization and inventory requests. It saves counts and hashes,
+not proprietary tool descriptions. An inaccessible service exits nonzero and is
+inconclusive. Inventory agreement is not drift verification or baseline approval.
+
+To exercise the installed binary against disposable synthetic fixtures with the
+independent official Go SDK client:
+
+```sh
+MCPDRIFT_TEST_BINARY="$HOME/.local/bin/mcpdrift" python3 scripts/test_mcp_server.py
+```
+
+The synthetic baseline created by this test is not a production approval.
+For a Codex configuration-only check, set `MCPDRIFT_CODEX_BIN` to the installed
+Codex CLI and optionally `MCPDRIFT_CODEX_COMMAND_JSON` to an exact JSON array of
+the absolute server executable and its startup arguments, then run
+`python3 scripts/test_codex_clean_config.py`. It uses a temporary `CODEX_HOME`,
+checks the command and arguments, and removes the registration. It does not invoke
+a model or modify the normal Codex configuration. See the
+[official Codex MCP configuration instructions](https://developers.openai.com/learn/docs-mcp).
+
+For MCP-only audit suites, excluding the optional Android Guardian/Rust checks:
+
+```sh
+python3 scripts/audit_mcp_driftguard.py --scope mcp --output /tmp/driftguard-audit
+```
+
+No persistent monitor should be enabled until the operator supplies a separately
+approved baseline and a verification key obtained through an independent trusted
+channel. Do not generate a key or approve today's observed surface to clear this
+gate. A persistent deployment also needs protected artifact storage, an explicit
+service account/environment, restart/boot scheduling, bounded evidence retention,
+and an alert route for drift and inconclusive probes. No such deployment is implied
+by successful CLI registration or a one-shot test. Network-denied sandbox results
+do not establish restrictions on the underlying VPS.

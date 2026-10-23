@@ -1,0 +1,1 @@
+{"sdk":"github.com/modelcontextprotocol/go-sdk v1.8.0","transport":"real stdio subprocess","tools":2,"resources":1,"prompts":1,"inspect":true,"unchanged_match":true,"drift_fail":true,"baseline_pinned":true,"target_override_rejected":true,"probe_error_inconclusive":true,"pass":true}

@@ -2,8 +2,9 @@
 
 **Acceptance is incomplete. No 100% operational or production-ready claim is justified.**
 The actual Go MCP stdio server now works with an official SDK client against an
-operator-approved synthetic target. Remote-client, production enrollment,
-third-party integration, HTTP and namespace acceptance remain unestablished.
+operator-approved synthetic target. Prior direct-VPS HTTP and full-race checks
+passed. Real production-target discovery, trusted baseline enrollment, persistent
+monitoring, actual agent tool invocation and namespace acceptance remain unestablished.
 
 Evidence: [suite results](evidence/mcp-audit-20261023/results.json),
 [SDK transcript result](evidence/mcp-audit-20261023/sdk_e2e.log),
@@ -11,6 +12,71 @@ Evidence: [suite results](evidence/mcp-audit-20261023/results.json),
 [live JSON-RPC responses](evidence/mcp-audit-20261023/live-output.jsonl).
 All evidence was generated locally; SDK interoperability is independent of the
 server implementation, but this is not an independent human or external audit.
+
+## Production continuation from b90dc23 — 2026-10-23
+
+**Production acceptance remains incomplete.** This continuation targets MCP
+DriftGuard only. The original matrix below records historical runs; the later
+successful direct-VPS HTTP/full-race results supersede its environment-only
+blockers for that tested VPS execution, not for this restricted Codex process.
+
+| Gate | Current evidence and result |
+| --- | --- |
+| User-owned service selection | Reviewed existing user service definitions and Conduit bridge source read-only. Selected `frequency-conduit-mcp.service`, `http://127.0.0.1:8765/mcp`, for initialization/inventory only. Existing service was neither restarted nor duplicated. Current uptime is not established by source inspection. |
+| Independent real-target discovery | New stdlib JSON HTTP probe and installed inspector both attempted the selected endpoint. Independent client returned `URLError`, errno 1 (`EPERM`); installed CLI exited 3. **INCONCLUSIVE**, no inventory or drift verdict obtained. [Receipt](evidence/mcp-production-20261023/real-target.json). |
+| Authorized VPS terminal path | Remote Desktop Commander `start_process` was attempted; tool rejected it with `MCP tool call requires approval, but approval policy is never`. No command executed through that path. No permission bypass or root escalation attempted. [Service review](evidence/mcp-production-20261023/service-review.json). |
+| Prior actual VPS networking | Retained direct-VPS conformance at `8100533a1db17349fbf699a17fda1f905204581c`: seven suites PASS, including HTTP/loopback and full Go race. These are actual earlier VPS results, not a fresh run of this continuation. |
+| Installed binary protocol/tool execution | **PASS, synthetic target**: official Go SDK v1.8.0 launched `/home/ubuntu/.local/bin/mcpdrift`; both tools, resource and prompt worked; intentional drift, pinned baseline, forbidden override and unavailable-target handling passed. Binary SHA-256 `3a15556ec78b5d25a280a365f697dc333c5411ea7852f1f7ac67cce112dc0c78`. [SDK result](evidence/mcp-production-20261023/sdk-installed.log). |
+| Isolated local Codex configuration | **PASS** with Codex CLI 0.163.0: exact installed executable and `serve` arguments registered, enabled, read back and removed in a temporary `CODEX_HOME`. This is real command registration, not model execution. [Receipt](evidence/mcp-production-20261023/codex-registration.log). |
+| Actual Codex agent invocation | Attempted `codex exec --oss --local-provider ollama --model qwen3:1.7b` with isolated configuration, read-only sandbox, analytics disabled, no OTEL exporter, no inherited API credentials, and existing local Ollama endpoint `127.0.0.1:11485`. CLI exited 1 during OSS setup: no reachable Ollama server detected. **NOT PROVEN**; no `tools/call` event observed. This does not establish that the real VPS Ollama service is down. [Command](evidence/mcp-production-20261023/codex-agent.json), [log](evidence/mcp-production-20261023/codex-agent.log). |
+| Persistent production monitoring | **GATED, not installed**. No independently approved Conduit baseline and trusted verification-key provenance established. Existing `/dev/shm/driftguard-live/approved.json` is explicitly synthetic and cannot authorize Conduit. No key issuance, baseline self-approval, timer, cron job or persistent service changes. |
+| Current tests | New probe safety/protocol tests: 4 PASS. Core Go race suite PASS. Stdio security/transport acceptance PASS. Full race invocation again fails at socket creation in this sandbox; retained as failure, not a VPS limitation. [Core race](evidence/mcp-production-20261023/core-race.log), [full race](evidence/mcp-production-20261023/go-race.log). |
+
+The independent probe covers initialization and paginated JSON HTTP inventories,
+with exact response IDs, size/page/deadline bounds, no redirects/proxy/credentials,
+and no tool invocation. It records only inventory counts and name hashes when
+successful. It does not cover SSE, authentication, stateless discovery, resource
+templates, or full MCP conformance. Tests use mocked responses for negative paths;
+they do not substitute for a successful real-service connection.
+
+Acceptance improvements include installed-binary SDK selection, visible bounded
+build diagnostics, exact Codex command/argument and enabled-state checks, and an
+MCP-only audit scope that excludes optional Guardian/Rust suites. README and INSTALL
+now describe these operations and the actual registration/agent distinction. The
+initial SDK rerun failed because the default Go cache was read-only; its failure
+log is retained. Retrying with a writable cache passed; no network/dependency
+fetch was required.
+
+No production tool was invoked, no production configuration changed, no hosted
+model or telemetry used, and no proprietary implementation was copied into this
+repository. The previously untracked continuation bundle and patch are preserved;
+[initial hashes](evidence/mcp-production-20261023/initial-hashes.json) bind their
+contents. Local model setup could not complete, so no model inference is claimed.
+
+The final MCP-only replay exited **1**, correctly retaining three failed suites
+out of 14: conformance (socket restrictions), stdio sandbox security (namespace
+restrictions), and historical mutations (6/8 detected; two HTTP cases blocked).
+The other 11 suites passed, including all six platform builds and their integrity
+verification, 200,000 bounded canonical fuzz executions, and the new probe tests.
+[Aggregate results](evidence/mcp-production-20261023/audit/results.json) retain
+individual commands, exits and log hashes. Build success does not prove native
+execution on macOS/Windows. The working tree was explicitly recorded dirty against
+base `b90dc23`; Go production code is unchanged in this continuation.
+
+Git staging in the original worktree failed because its Git metadata is mounted
+read-only (`index.lock`: read-only file system). Changes and sanitized evidence
+are committed in `/dev/shm/driftguard-production-commit`, based directly on
+`b90dc23`. The original branch cannot be advanced from this sandbox. An incremental
+bundle and patch are exported beside that clone for import into a writable repo.
+
+Residual production gates: obtain a successful discovery-only connection to the
+selected real service through a permitted execution path; independently review
+and approve its baseline and trust root; then configure and prove boot-persistent
+monitoring with protected artifacts, bounded retained evidence and operator alerts.
+Prove an actual Codex agent tool call once its local provider is reachable. Native
+non-Linux platform execution and externally controlled release authorization remain
+unestablished. Android/device enrollment is outside this MCP production acceptance
+scope and is not a prerequisite for a local MCP drift monitor.
 
 ## Implemented and verified changes
 

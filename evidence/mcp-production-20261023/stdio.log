@@ -1,0 +1,19 @@
+{
+  "--malformed": 3,
+  "--missing-inventory": 3,
+  "--repeated-cursor": 3,
+  "--wrong-id": 3,
+  "bad_args": 3,
+  "baseline": 0,
+  "baseline_unchanged": true,
+  "detected_added_tool": true,
+  "drift": 2,
+  "env_secret_isolated": true,
+  "inspect": 0,
+  "inventory": true,
+  "linux_descendant_killed": true,
+  "pass": true,
+  "unapproved_args": 3,
+  "unapproved_executable": 3,
+  "unchanged": 0
+}

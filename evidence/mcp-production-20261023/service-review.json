@@ -1,0 +1,25 @@
+{
+  "inspection": "read-only service definitions; current sandbox cannot establish host process uptime",
+  "selected_target": {
+    "service": "frequency-conduit-mcp.service",
+    "endpoint": "http://127.0.0.1:8765/mcp",
+    "selection": "loopback JSON HTTP; inventory discovery only, no tools/call",
+    "source_review": "mcp_bridge.py advertises tools and binds 127.0.0.1:8765; starting a duplicate avoided"
+  },
+  "other_services": [
+    "desktop-commander-remote.service",
+    "mcpdrift-test-ollama.service"
+  ],
+  "production_baseline": "No independently approved Conduit baseline/trust root established",
+  "persistent_monitor": "not configured; approval/trust gate unsatisfied",
+  "remote_terminal_attempt": {
+    "tool": "Remote Desktop Commander start_process",
+    "result": "rejected: MCP tool call requires approval, but approval policy is never",
+    "host_commands_executed": false
+  },
+  "definition_sha256": {
+    "frequency-conduit-mcp.service": "c4a024fceb3757bded9b12a893e53e5a2712fb83c995b5515bcfb3bbc633a02e",
+    "desktop-commander-remote.service": "be5b22dfc4e1a8fa7fa1457cbff43afc423c3aaec83eb46dbfdc3dcc50cb6f8f",
+    "mcpdrift-test-ollama.service": "0e69569c2da2027c0b08a1907cbd0c4e41e5ce54dc1f6b88cc621911102e2c44"
+  }
+}

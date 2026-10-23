@@ -1,0 +1,6 @@
+ok  	github.com/altrudev/MCP-DriftGuard/cmd/mcpdrift	1.024s
+ok  	github.com/altrudev/MCP-DriftGuard/internal/baseline	(cached)
+ok  	github.com/altrudev/MCP-DriftGuard/internal/canonical	(cached)
+ok  	github.com/altrudev/MCP-DriftGuard/internal/diff	(cached)
+ok  	github.com/altrudev/MCP-DriftGuard/internal/report	(cached)
+ok  	github.com/altrudev/MCP-DriftGuard/internal/mcpserver	(cached)

@@ -8,6 +8,8 @@ from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 parser=argparse.ArgumentParser(description="Local operational suites; unavailable infrastructure remains nonzero evidence.")
 parser.add_argument('--output',required=True)
+parser.add_argument('--scope',choices=('all','mcp'),default='all',
+                    help='mcp excludes optional Guardian/Rust suites and runs only MCP Python checks')
 args=parser.parse_args()
 out=Path(args.output).resolve();out.mkdir(parents=True,exist_ok=True)
 for name in ('tmp','go','rust'):(out/name).mkdir(exist_ok=True)
@@ -32,7 +34,13 @@ suites=[
 ('verify_candidates',['python3','scripts/verify_artifacts.py',str(out/'candidates')]),
 ('fuzz_canonical',['go','test','./internal/canonical','-run','^$','-fuzz','Fuzz','-fuzztime=200000x','-parallel=2']),
 ]
+if args.scope == 'mcp':
+ suites = [(name, cmd) for name, cmd in suites if name not in
+           ('python', 'rust', 'python_with_rust', 'rust_clippy', 'rust_fmt')]
+ suites.append(('mcp_python', ['python3', '-m', 'unittest', 'discover', '-s', 'scripts',
+                              '-p', 'test_probe_local_mcp.py']))
 report={'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain','--untracked-files=no'],cwd=root,text=True).strip()),'started_utc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'base_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),'suites':{}}
+report['scope'] = args.scope
 for name,cmd in suites:
  start=time.monotonic()
  suite_env=dict(env)

@@ -279,3 +279,12 @@ See [COMMERCIAL.md](COMMERCIAL.md).
 Licensed under the **Apache License 2.0**. See [LICENSE](LICENSE).
 
 Apache-2.0 permits commercial use and redistribution, includes an explicit patent grant, preserves attribution and NOTICE obligations, and does not grant project branding rights beyond customary attribution.
+
+
+Local operational checks can compare an installed binary with independent
+read-only discovery of an operator-selected loopback service. See
+[local acceptance instructions](INSTALL.md#local-operational-acceptance-without-baseline-approval).
+The audit runner supports `--scope mcp` to exclude optional Guardian/Rust checks.
+Production monitoring remains gated on independently trusted, approved artifacts;
+no baseline is approved automatically and no persistent monitor is installed by
+these checks.

@@ -16,12 +16,19 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     with tempfile.TemporaryDirectory(prefix="driftguard-sdk-") as td:
         root = Path(td)
-        binary, client, fixture = root / "mcpdrift", root / "client", root / "fixture.py"
+        binary = Path(os.environ.get("MCPDRIFT_TEST_BINARY", root / "mcpdrift")).resolve()
+        client, fixture = root / "client", root / "fixture.py"
         baseline = root / "approved.json"
         def run(args, **kwargs):
-            return subprocess.run(list(map(str, args)), cwd=ROOT, check=True,
-                                  text=True, capture_output=True, timeout=120, **kwargs)
-        run(["go", "build", "-o", binary, "./cmd/mcpdrift"])
+            result = subprocess.run(list(map(str, args)), cwd=ROOT,
+                                    text=True, capture_output=True, timeout=120, **kwargs)
+            if result.returncode:
+                raise RuntimeError(f"acceptance command failed ({result.returncode}): {args}\n{result.stderr[-4000:]}")
+            return result
+        if "MCPDRIFT_TEST_BINARY" not in os.environ:
+            run(["go", "build", "-o", binary, "./cmd/mcpdrift"])
+        elif not binary.is_file() or not os.access(binary, os.X_OK):
+            raise RuntimeError("MCPDRIFT_TEST_BINARY must identify an existing executable")
         run(["go", "-C", ROOT / "scripts/mcp-sdk-client", "build", "-mod=readonly", "-o", client, "."])
         shutil.copyfile(ROOT / "examples/stdio-fixture/server.py", fixture)
         fixture.chmod(0o700)
