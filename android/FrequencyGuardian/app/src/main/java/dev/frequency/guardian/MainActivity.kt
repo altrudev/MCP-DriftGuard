@@ -46,8 +46,8 @@ class MainActivity : Activity() {
             report.set("strongbox", identity.strongBoxStatus(), identity.status())
             val fingerprint = identity.fingerprint()
             val baseline = settings.getString("diagnostic-identity-baseline", null)
-            report.set("identity_continuity", when { baseline == null -> DiagnosticStatus.PENDING; baseline == fingerprint -> DiagnosticStatus.PASS; else -> DiagnosticStatus.FAIL },
-                if (baseline == null) "First observation; local baseline recorded: $fingerprint" else "Local baseline comparison; current SPKI SHA-256: $fingerprint. Does not establish remote enrollment or reinstall continuity")
+            report.set("identity_continuity", when { baseline == null -> DiagnosticStatus.PENDING; baseline == fingerprint -> DiagnosticStatus.PENDING; else -> DiagnosticStatus.FAIL },
+                if (baseline == null) "First observation; local baseline recorded: $fingerprint" else "Local SPKI baseline unchanged: $fingerprint. Independent continuity, authorized upgrade and remote identity binding remain UNVERIFIED")
             if (baseline == null) check(settings.edit().putString("diagnostic-identity-baseline", fingerprint).commit())
         }
         refreshDiagnostics()

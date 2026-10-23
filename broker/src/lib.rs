@@ -1,4 +1,5 @@
 pub mod attestation;
+pub mod recovery;
 // Experimental offline authorization and constrained verifier replay. No key generation.
 pub mod coordinator;
 pub mod runner;

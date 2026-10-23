@@ -17,7 +17,7 @@ certificate export still requires its metadata warning.
 | tampering | Modified digest fails verification against the same signature |
 | nonce | Two fresh 32-byte nonces differ; consumed fixture refuses replay |
 | expiry | Local fixture refuses pre-issuance and expiry timestamps |
-| identity_continuity | First observation pending; later runs compare persisted SPKI baseline; mismatch fails without replacing baseline |
+| identity_continuity | First observation pending; later runs compare persisted SPKI baseline; matching baseline remains pending independent continuity evidence; mismatch fails without replacing baseline |
 | strongbox | API 31+ StrongBox passes; TEE/software fails this specific check; API 30 pending |
 | attestation_certificate_status | Missing chain pending; bad bounds, dates or missing Android extension fail; locally valid chain remains pending independent trust verification |
 | recovery_readiness | Pending: offline identity, quorum, revocation and recovery ceremony are unimplemented |
