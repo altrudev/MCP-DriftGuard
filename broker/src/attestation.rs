@@ -347,3 +347,19 @@ mod tests {
         assert!(verify_export(b"{}", &[], &[0; 32]).is_err());
     }
 }
+
+/// Extract canonical P-256 SPKI from a certificate after independent chain verification.
+pub fn candidate_spki(export_json: &[u8]) -> Result<Vec<u8>> {
+    let export: Export = serde_json::from_slice(export_json)?;
+    let leaf = STANDARD.decode(export.certificates_der_b64.first().ok_or("missing leaf")?)?;
+    let cert = children(exact(&leaf, 16)?)?;
+    let tbs = children(*cert.first().ok_or("invalid certificate")?)?;
+    let spki = children(*tbs.get(6).ok_or("missing public key")?)?;
+    let point = spki.get(1).ok_or("missing EC point")?;
+    if point.tag != 3 || point.class != 0 || point.value.len() != 66 || point.value[..2] != [0, 4] {
+        return Err("unsupported point".into());
+    }
+    let mut output = hex::decode("3059301306072a8648ce3d020106082a8648ce3d030107034200")?;
+    output.extend_from_slice(&point.value[1..]);
+    Ok(output)
+}

@@ -28,6 +28,7 @@ pub struct Acceptance {
     pub local_checks_passed: usize,
     pub attestation_chain_verified_against_supplied_pin: bool,
     pub challenge_matches: bool,
+    pub candidate_binding_verified: bool,
     pub independent_application_identity_verified: bool,
     pub revocation_verified: bool,
     pub recovery_operational: bool,
@@ -39,6 +40,7 @@ pub fn verify(
     attestation_json: &[u8],
     challenge: &[u8],
     root_pin: &[u8],
+    binding_json: &[u8],
 ) -> Result<Acceptance> {
     if diagnostic_json.len() > 70000 {
         return Err("diagnostic exceeds allowed size".into());
@@ -101,12 +103,16 @@ pub fn verify(
     if !a.chain_signatures_verified_against_supplied_pin || !a.challenge_matches || !a.p256 {
         return Err("incomplete certificate verification".into());
     }
+    let spki = attestation::candidate_spki(attestation_json)?;
+    crate::guardian_binding::verify_binding(binding_json, challenge, &spki)
+        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
     Ok(Acceptance {
         schema: "frequency-guardian-independent-acceptance/v1",
         diagnostic_version: d.version,
         local_checks_passed: 6,
         attestation_chain_verified_against_supplied_pin: true,
         challenge_matches: true,
+        candidate_binding_verified: true,
         independent_application_identity_verified: false,
         revocation_verified: false,
         recovery_operational: false,

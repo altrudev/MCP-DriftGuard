@@ -22,14 +22,35 @@ fn diagnostic() -> Vec<u8> {
 fn refuses_unverified_or_forged_inputs() {
     let diag = diagnostic();
     let fake = b"{}";
-    assert!(verify(&diag, fake, &[3; 32], &[4; 32]).is_err());
+    assert!(verify(&diag, fake, &[3; 32], &[4; 32], b"{}").is_err());
     let mut d: serde_json::Value = serde_json::from_slice(&diag).unwrap();
     d["production_eligible"] = json!(true);
-    assert!(verify(&serde_json::to_vec(&d).unwrap(), fake, &[3; 32], &[4; 32]).is_err());
+    assert!(verify(
+        &serde_json::to_vec(&d).unwrap(),
+        fake,
+        &[3; 32],
+        &[4; 32],
+        b"{}"
+    )
+    .is_err());
     d["production_eligible"] = json!(false);
     d["checks"]["hardware"]["status"] = json!("fail");
-    assert!(verify(&serde_json::to_vec(&d).unwrap(), fake, &[3; 32], &[4; 32]).is_err());
+    assert!(verify(
+        &serde_json::to_vec(&d).unwrap(),
+        fake,
+        &[3; 32],
+        &[4; 32],
+        b"{}"
+    )
+    .is_err());
     d["checks"]["hardware"]["status"] = json!("pass");
     d["checks"].as_object_mut().unwrap().remove("update");
-    assert!(verify(&serde_json::to_vec(&d).unwrap(), fake, &[3; 32], &[4; 32]).is_err());
+    assert!(verify(
+        &serde_json::to_vec(&d).unwrap(),
+        fake,
+        &[3; 32],
+        &[4; 32],
+        b"{}"
+    )
+    .is_err());
 }
