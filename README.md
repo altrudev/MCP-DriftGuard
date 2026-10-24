@@ -316,3 +316,7 @@ retryable SQLite drift/recovery journal and no remote service required. Agent mo
 returns structured actionable results without claiming unsolicited host push.
 A headless VPS cannot reach a customer device unaided. See
 [monitor setup and notification options](docs/PRODUCTION-MONITOR.md).
+
+An explicitly opt-in [local MCP execution evidence demo](docs/ISSUE3-EXECUTION-DEMO.md)
+exercises the signed actor ledger against a controlled mock, governed observer,
+and separate read-only state verifier. It does not enable production execution.

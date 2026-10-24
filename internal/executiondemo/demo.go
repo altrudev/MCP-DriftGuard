@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -56,13 +57,14 @@ type Artifact struct {
 	Head           string                       `json:"head"`
 }
 type lab struct {
-	mu       sync.Mutex
-	records  map[string]record
-	ledger   *evidence.Ledger
-	manifest evidence.Manifest
-	keys     map[string]ed25519.PrivateKey
-	client   *http.Client
-	target   string
+	observerMu sync.Mutex
+	mu         sync.Mutex
+	records    map[string]record
+	ledger     *evidence.Ledger
+	manifest   evidence.Manifest
+	keys       map[string]ed25519.PrivateKey
+	client     *http.Client
+	target     string
 }
 
 func hash(b []byte) string { h := sha256.Sum256(b); return hex.EncodeToString(h[:]) }
@@ -135,6 +137,8 @@ func (l *lab) state(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(l.records)
 }
 func (l *lab) proxy(w http.ResponseWriter, r *http.Request) {
+	l.observerMu.Lock()
+	defer l.observerMu.Unlock()
 	if r.Method != "POST" || r.URL.RequestURI() != "/mcp" || r.Header.Get("X-Demo-Confirmation") != Confirmation {
 		http.Error(w, "confirmation required", 403)
 		return
@@ -187,13 +191,19 @@ func (l *lab) proxy(w http.ResponseWriter, r *http.Request) {
 	var result struct {
 		JSONRPC string `json:"jsonrpc"`
 		ID      string `json:"id"`
-		Result  struct {
+		Result  *struct {
 			Content []any `json:"content"`
 			IsError bool  `json:"isError"`
 		} `json:"result"`
 	}
 	raw, e := io.ReadAll(io.LimitReader(resp.Body, 4097))
-	if e != nil || len(raw) > 4096 || resp.StatusCode != 200 || decode(bytes.NewReader(raw), &result) != nil || result.ID != c.ID || result.JSONRPC != "2.0" || result.Result.IsError {
+	if e != nil || len(raw) > 4096 || resp.StatusCode != 200 || decode(bytes.NewReader(raw), &result) != nil || result.ID != c.ID || result.JSONRPC != "2.0" || result.Result == nil || result.Result.IsError {
+		f.Phase = "outcome_unknown"
+		f.ResponseHash = hash(raw)
+		if err := l.append("observer", branch, retry, "unknown", "error", f); err != nil {
+			http.Error(w, "evidence failure", 500)
+			return
+		}
 		http.Error(w, "invalid response", 502)
 		return
 	}
@@ -260,13 +270,22 @@ func run(confirmation string, local *memoryHTTP) (Artifact, error) {
 	l.client = &http.Client{Transport: transport, Timeout: 3 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return errors.New("redirect denied") }}
 	var stateURL, proxyURL string
 	if local == nil {
-		mock := httptest.NewServer(http.HandlerFunc(l.mock))
+		mock, err := localServer(l.mock)
+		if err != nil {
+			return Artifact{}, err
+		}
 		defer mock.Close()
 		l.target = mock.URL
-		state := httptest.NewServer(http.HandlerFunc(l.state))
+		state, err := localServer(l.state)
+		if err != nil {
+			return Artifact{}, err
+		}
 		defer state.Close()
 		stateURL = state.URL
-		proxy := httptest.NewServer(http.HandlerFunc(l.proxy))
+		proxy, err := localServer(l.proxy)
+		if err != nil {
+			return Artifact{}, err
+		}
 		defer proxy.Close()
 		proxyURL = proxy.URL
 	} else {
@@ -317,4 +336,14 @@ func (m *memoryHTTP) RoundTrip(r *http.Request) (*http.Response, error) {
 	case <-r.Context().Done():
 		return nil, r.Context().Err()
 	}
+}
+
+func localServer(h http.HandlerFunc) (*httptest.Server, error) {
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		return nil, err
+	}
+	s := &httptest.Server{Listener: listener, Config: &http.Server{Handler: h, ReadHeaderTimeout: time.Second, ReadTimeout: 2 * time.Second, WriteTimeout: 3 * time.Second, MaxHeaderBytes: 4096}}
+	s.Start()
+	return s, nil
 }
