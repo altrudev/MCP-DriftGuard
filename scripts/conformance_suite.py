@@ -5,6 +5,7 @@ from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
 SUITES=[
+ ("release_closure_gate",[sys.executable,"-m","unittest","discover","-s","scripts","-p","test_release_closure_gate.py"]),
  ("local_notifications",[sys.executable,"-m","unittest","discover","-s","scripts","-p","test_local_notifications.py"]),
  ("production_monitor",[sys.executable,"-m","unittest","discover","-s","scripts","-p","test_production_monitor.py"]),
  ("go_unit",["go","test","./..."]),
@@ -27,12 +28,15 @@ def run(cmd):
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--output",help="write sanitized JSON evidence to this path")
+    ap.add_argument("--issues", help="local GitHub issue inventory for release disposition gate")
+    ap.add_argument("--dispositions", help="reviewed local release dispositions")
     args=ap.parse_args()
     commit=subprocess.run(["git","rev-parse","HEAD"],cwd=ROOT,capture_output=True,text=True,check=True).stdout.strip()
     report={"format":"mcpdrift-conformance-evidence/v1","commit":commit,
             "platform":platform.system(),"arch":platform.machine(),
             "timestamp_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
             "limitations":["Local tests are not formal certification",
+                           "Gate tests use synthetic inventories; release closure requires --issues and --dispositions",
                            "Federation external rerun remains independently controlled",
                            "Agent-host integration and Windows/macOS native executions not established"],
             "suites":{}}
@@ -40,6 +44,13 @@ def main():
         result=run(cmd)
         report["suites"][label]=result
         print(label,"PASS" if result["exit"]==0 else "FAIL",flush=True)
+    # Mandatory release gate; absent local inputs fail closed without network.
+    cmd=[sys.executable,"scripts/release_closure_gate.py"]
+    if args.issues: cmd += ["--issues",args.issues]
+    if args.dispositions: cmd += ["--dispositions",args.dispositions]
+    report["suites"]["release_dispositions"]=run(cmd)
+    print("release_dispositions", "PASS" if report["suites"]["release_dispositions"]["exit"]==0 else "FAIL", flush=True)
+    report["release_closure"]="reviewed dispositions only" if report["suites"]["release_dispositions"]["exit"]==0 else "not established"
     report["passed"]=all(x["exit"]==0 for x in report["suites"].values())
     payload=json.dumps(report,indent=2,sort_keys=True)+"\n"
     if args.output:

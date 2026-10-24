@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/altrudev/MCP-DriftGuard/internal/canonical"
+	"github.com/altrudev/MCP-DriftGuard/internal/evidence"
 )
 
 const ModernProtocolVersion = "2026-07-28"
@@ -17,6 +18,8 @@ const maxPages = 100
 
 type Client struct {
 	HTTP *http.Client
+	// DiscoverySink is opt-in, synchronous and fail-closed. It observes HTTP RPCs only.
+	DiscoverySink func(evidence.Discovery) error
 }
 
 func New() *Client {
