@@ -120,6 +120,18 @@ MCPDRIFT_BEARER_TOKEN="$TOKEN" \
 
 The bearer token is used for HTTP requests and is not written into snapshots or baseline artifacts.
 
+## Offline evidence verification (experimental)
+
+Signed evidence declarations and a bounded append-only observation ledger support actor-isolated historical replay, chronology checks, and explicit retry branches:
+
+```bash
+./mcpdrift evidence-verify --manifest contract.manifest.json \
+  --verify-key declaration.pub.pem --actor-keys actor-keys.json \
+  --expected-head "$TRUSTED_HEAD" observations.json
+```
+
+This verifies submitted signed assertions offline; it does not observe live MCP behavior or prove execution from receipts or acknowledgements. Retain the trusted head independently to detect truncated history. See the [evidence format, limits, API and exit codes](internal/evidence/README.md).
+
 ## 90-second PASS → FAIL demo
 
 Start the included current-protocol MCP fixture:

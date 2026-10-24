@@ -39,6 +39,8 @@ func run(args []string) int {
 		return verify(args[1:])
 	case "diff":
 		return diffCmd(args[1:])
+	case "evidence-verify":
+		return evidenceVerify(args[1:])
 	case "evidence-sign":
 		return evidenceSign(args[1:])
 	case "evidence-diff":
@@ -190,7 +192,7 @@ func parseOneEndpoint(fs *flag.FlagSet, args []string) error {
 func failProbe(err error) int      { return fail(err, 3) }
 func fail(err error, code int) int { fmt.Fprintln(os.Stderr, "mcpdrift:", err); return code }
 func usage() {
-	fmt.Fprintln(os.Stderr, "Usage: mcpdrift <serve|inspect|baseline|verify|diff|keygen|version> [options]")
+	fmt.Fprintln(os.Stderr, "Usage: mcpdrift <serve|inspect|baseline|verify|diff|evidence-sign|evidence-diff|evidence-verify|keygen|version> [options]")
 }
 
 func inspectTarget(endpoint, executable, argsJSON string) (canonical.Snapshot, error) {
