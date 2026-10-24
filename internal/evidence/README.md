@@ -1,6 +1,6 @@
-# Offline evidence contracts and ledger (experimental)
+# Evidence contracts and discovery ledger (experimental)
 
-This package implements the offline evidence portion of [issue #3](https://github.com/altrudev/MCP-DriftGuard/issues/3). It compares declared semantic contracts and verifies signed actor assertions with append-only replay. It does not capture live MCP receipts, validate the truth of a source, prove execution from an acknowledgement, or establish real-world clock accuracy. MCP discovery and baseline verification remain separate.
+This package implements the offline evidence portion of [issue #3](https://github.com/altrudev/MCP-DriftGuard/issues/3). It compares declared semantic contracts and verifies signed actor assertions with append-only replay. The opt-in HTTP discovery path captures locally observed RPC outcomes. It does not validate the truth of a source, prove tool execution from discovery or an acknowledgement, or establish real-world clock accuracy. Issue #3 remains unresolved: runtime behavior semantics and independent reconstruction acceptance are absent.
 
 Claim IDs are stable and unique. Changes to actor, receipt meaning, timestamp meaning, authority, errors, acknowledgements, provenance or reconstruction meaning produce HIGH-severity drift candidates. Equality means matching declarations only.
 
@@ -62,3 +62,71 @@ The decoder rejects unknown fields, malformed/trailing JSON and oversized input.
 Tests inject signed invariant violations and corrupted records at append, replay and CLI boundaries. These are synthetic offline tests, not live MCP observations.
 
 Broader DDC architecture/products: Valentyn Rukhaylo / Altru.dev. Evidence/replay refinements were materially sharpened through Valentyn Rukhaylo's public technical engagement with Jason McGill, as attributed in issue #3.
+
+## Opt-in HTTP discovery acquisition
+
+An application can attach the existing HTTP discovery client to a separately trusted
+observer ledger (declaration and observer keys remain separately configured):
+
+```go
+client := observe.New()
+client.DiscoverySink = func(d evidence.Discovery) error {
+    return ledger.RecordDiscovery(d, "observer", "discovery", "attempt-1", "", observerKey)
+}
+snapshot, err := client.Inspect(ctx, endpoint)
+// Check err even if a partial snapshot exists. Archive ledger.File() and retain
+// ledger.Head() independently, including failed attempts.
+```
+
+This is an internal Go API, not a new CLI flag. The sink is synchronous, opt-in and
+fail-closed: rejected appends fail acquisition; modern fallback cannot hide an append
+failure. Existing safe transport and endpoint policy still apply. No telemetry or
+external storage is added. Configure endpoint paths without secrets; evidence mode
+rejects endpoint queries, userinfo and fragments before sending. Headers, bearer
+credentials, session identifiers, response bodies and error messages are not retained.
+Request hashes bind the exact generated JSON, including ID, cursor and protocol
+metadata. Request ID is recorded separately. Response hashes cover the existing
+bounded RPC body reader's output (first SSE data payload for SSE; at most 4 MiB for
+JSON, 8 KiB prefix for HTTP errors), not a full wire transcript or completeness proof.
+HTTP status 0 means no HTTP response acquired. Transport, HTTP, decoding and RPC
+errors remain distinct; a valid matching JSON-RPC envelope is only a discovery
+response. Tool input/output behavior, effects and authority remain unknown.
+
+Each typed `discovery` field is included in the observation signature and chain.
+`RecordDiscovery` uses acquisition completion as `observed_at`, preserves the
+start time, endpoint, method, request ID/hash, response hash and status, and signs
+with the observer's key. It cannot write another actor's claim. Separate retry
+branches can reference the earlier observation digest using the existing retry
+rules; no failure is replaced. Legacy initialization and list RPCs are covered;
+initialized notifications, authorization metadata, TLS probes and stdio are outside
+this recorder's scope. No tool invocation method is allowed by evidence validation.
+
+`CompareDiscovery` operates on observations from verified ledgers; it does not
+verify signatures itself. It requires the same actor, claim, contract, endpoint,
+method and exact request hash. Status, HTTP status and RPC error-code changes are
+demonstrable changes in what the observer received. Changed response hashes are
+`UNKNOWN` semantic-impact candidates, never proof of behavior drift. Equal hashes
+prove only equal captured bytes. Different requests are incomparable rather than
+silently equated. Arbitrary result semantics, server claims, authority changes,
+event time truth and end-to-end reconstruction remain unproven. Signed assertions
+can still be fabricated by a compromised observer; independent acceptance and
+trusted checkpoints are required. The new transport tests are synthetic, socket-free
+fixtures, not live deployment proof.
+
+## Conformance and release dispositions
+
+The conformance runner always tests negative and positive closure-gate dispositions
+and always invokes the actual release gate. Provide local reviewed inputs:
+
+```sh
+GOCACHE=/tmp/mcpdrift-gocache python3 scripts/conformance_suite.py \
+  --issues /path/to/github-issues.json --dispositions /path/to/reviewed-dispositions.json
+```
+
+Without those files, the mandatory release gate fails closed; no GitHub API access
+is attempted. Passing synthetic gate tests cannot establish release closure. An open
+issue may be `blocked` or `deferred` with explicit evidence, but cannot be `verified`.
+A passing disposition inventory is not certification or proof that all issues are
+complete. The operator must independently establish inventory completeness,
+freshness and runtime evidence quality. Keep actual #3 blocked/deferred pending
+independent runtime behavior proof; discovery tests do not satisfy its acceptance.

@@ -35,6 +35,10 @@ type discoverResult struct {
 func (c *Client) inspectModern(ctx context.Context, endpoint string, s *canonical.Snapshot) (bool, bool, error) {
 	resp, proto, err := c.modernRPC(ctx, endpoint, 1, "server/discover", map[string]any{})
 	if err != nil {
+		var appendErr *discoveryAppendError
+		if errors.As(err, &appendErr) {
+			return false, false, err
+		}
 		var hs *httpStatusError
 		if errors.As(err, &hs) {
 			if hs.Status == http.StatusNotFound || hs.Status == http.StatusMethodNotAllowed {
@@ -173,24 +177,11 @@ func (c *Client) modernRPC(ctx context.Context, endpoint string, id int, method 
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	res, err := c.HTTP.Do(req)
-	if err != nil {
-		return rpcResponse{}, "", err
+	rr, res, err := c.discoveryRPC(req, b)
+	if res == nil {
+		return rr, "", err
 	}
-	defer res.Body.Close()
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		body, _ := io.ReadAll(io.LimitReader(res.Body, 8192))
-		return rpcResponse{}, res.Proto, &httpStatusError{Status: res.StatusCode, Proto: res.Proto, Header: res.Header.Clone(), Body: string(body)}
-	}
-	raw, err := readRPCBody(res.Body, res.Header.Get("Content-Type"))
-	if err != nil {
-		return rpcResponse{}, res.Proto, err
-	}
-	var rr rpcResponse
-	if err := json.Unmarshal(raw, &rr); err != nil {
-		return rr, res.Proto, err
-	}
-	return rr, res.Proto, nil
+	return rr, res.Proto, err
 }
 
 func (c *Client) paginateModern(ctx context.Context, endpoint string, id *int, method string, consume func(json.RawMessage) (string, error)) error {

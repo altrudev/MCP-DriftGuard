@@ -15,15 +15,21 @@ a=p.parse_args()
 issues=json.load(open(a.issues,encoding='utf-8'))
 dispositions=json.load(open(a.dispositions,encoding='utf-8'))
 errors=[]
+reviewed=0
+seen=set()
 for issue in issues:
     if 'pull_request' in issue: continue
+    reviewed+=1
     number=str(issue['number'])
+    if number in seen or issue.get('state') not in ('open','closed'):
+        errors.append('#'+number+' duplicate or invalid issue state')
+    seen.add(number)
     entry=dispositions.get(number)
-    if not isinstance(entry,dict) or entry.get('status') not in ('verified','deferred','blocked') or not entry.get('evidence'):
+    if not isinstance(entry,dict) or entry.get('status') not in ('verified','deferred','blocked') or not isinstance(entry.get('evidence'),str) or not entry['evidence'].strip():
         errors.append('#'+number+' lacks reviewed disposition and evidence')
     elif issue.get('state')=='open' and entry['status']=='verified':
         errors.append('#'+number+' still open but marked verified; reconcile tracker')
-if not issues: errors.append('empty issue inventory cannot establish closure')
+if not reviewed: errors.append('empty issue inventory cannot establish closure')
 if errors:
     print('RELEASE CLOSURE BLOCKED:\n'+'\n'.join(errors),file=sys.stderr)
     sys.exit(1)

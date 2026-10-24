@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 
@@ -145,24 +144,11 @@ func (c *Client) legacyRPC(ctx context.Context, endpoint, session string, payloa
 		req.Header.Set("Mcp-Session-Id", session)
 	}
 
-	res, err := c.HTTP.Do(req)
-	if err != nil {
-		return rpcResponse{}, "", "", err
+	rr, res, err := c.discoveryRPC(req, b)
+	if res == nil {
+		return rr, "", "", err
 	}
-	defer res.Body.Close()
-	if res.StatusCode < 200 || res.StatusCode >= 300 {
-		body, _ := io.ReadAll(io.LimitReader(res.Body, 8192))
-		return rpcResponse{}, "", res.Proto, &httpStatusError{Status: res.StatusCode, Proto: res.Proto, Header: res.Header.Clone(), Body: string(body)}
-	}
-	raw, err := readRPCBody(res.Body, res.Header.Get("Content-Type"))
-	if err != nil {
-		return rpcResponse{}, "", res.Proto, err
-	}
-	var rr rpcResponse
-	if err := json.Unmarshal(raw, &rr); err != nil {
-		return rr, "", res.Proto, err
-	}
-	return rr, res.Header.Get("Mcp-Session-Id"), res.Proto, nil
+	return rr, res.Header.Get("Mcp-Session-Id"), res.Proto, err
 }
 
 func (c *Client) notifyLegacy(ctx context.Context, endpoint, session string, payload any) error {

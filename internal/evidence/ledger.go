@@ -24,23 +24,24 @@ const (
 // Observation records an actor's assertion at acquisition time. State is an
 // epistemic label, never a promotion of a receipt or acknowledgement to success.
 type Observation struct {
-	Format     string   `json:"format"`
-	Sequence   int      `json:"sequence"`
-	Previous   string   `json:"previous"`
-	Contract   string   `json:"contract"`
-	Actor      string   `json:"actor"`
-	Claim      string   `json:"claim"`
-	Branch     string   `json:"branch"`
-	RetryOf    string   `json:"retry_of,omitempty"`
-	ObservedAt string   `json:"observed_at"`
-	EventAt    string   `json:"event_at,omitempty"`
-	State      string   `json:"state"` // unknown, inferred, observed
-	Kind       string   `json:"kind"`  // receipt, acknowledgement, error, assertion
-	Source     string   `json:"source"`
-	Value      string   `json:"value"`
-	Supports   []string `json:"supports,omitempty"`
-	Digest     string   `json:"digest"`
-	Signature  string   `json:"signature"`
+	Format     string     `json:"format"`
+	Sequence   int        `json:"sequence"`
+	Previous   string     `json:"previous"`
+	Contract   string     `json:"contract"`
+	Actor      string     `json:"actor"`
+	Claim      string     `json:"claim"`
+	Branch     string     `json:"branch"`
+	RetryOf    string     `json:"retry_of,omitempty"`
+	ObservedAt string     `json:"observed_at"`
+	EventAt    string     `json:"event_at,omitempty"`
+	State      string     `json:"state"` // unknown, inferred, observed
+	Kind       string     `json:"kind"`  // receipt, acknowledgement, error, assertion
+	Source     string     `json:"source"`
+	Value      string     `json:"value"`
+	Supports   []string   `json:"supports,omitempty"`
+	Discovery  *Discovery `json:"discovery,omitempty"`
+	Digest     string     `json:"digest"`
+	Signature  string     `json:"signature"`
 }
 
 type LedgerFile struct {
@@ -98,6 +99,14 @@ func SignObservation(o Observation, key ed25519.PrivateKey) (Observation, error)
 }
 
 func cloneObservation(o Observation) Observation {
+	if o.Discovery != nil {
+		d := *o.Discovery
+		if d.RPCCode != nil {
+			code := *d.RPCCode
+			d.RPCCode = &code
+		}
+		o.Discovery = &d
+	}
 	o.Supports = append([]string(nil), o.Supports...)
 	return o
 }
@@ -119,6 +128,19 @@ func (l *Ledger) Append(o Observation) error {
 	}
 	if o.Format != ObservationFormat || o.Contract != l.manifest || o.Sequence != len(l.records)+1 || o.Previous != l.Head() {
 		return errors.New("invalid observation format, contract, sequence or chain")
+	}
+	if o.Discovery != nil {
+		if err := o.Discovery.Validate(); err != nil {
+			return err
+		}
+		d := o.Discovery
+		kind := "error"
+		if d.Status == "response" {
+			kind = "receipt"
+		}
+		if o.State != "observed" || o.Kind != kind || o.Source != d.Endpoint || o.ObservedAt != d.CompletedAt || o.EventAt != "" || o.Value != "discovery RPC outcome; tool execution unknown" {
+			return errors.New("discovery observation scope mismatch")
+		}
 	}
 	claim, ok := l.claims[o.Claim]
 	if !ok || claim.Actor != o.Actor {
