@@ -13,6 +13,7 @@ import (
 	"github.com/altrudev/MCP-DriftGuard/internal/baseline"
 	"github.com/altrudev/MCP-DriftGuard/internal/canonical"
 	mdiff "github.com/altrudev/MCP-DriftGuard/internal/diff"
+	"github.com/altrudev/MCP-DriftGuard/internal/evidence"
 	"github.com/altrudev/MCP-DriftGuard/internal/mcpserver"
 	"github.com/altrudev/MCP-DriftGuard/internal/observe"
 	"github.com/altrudev/MCP-DriftGuard/internal/report"
@@ -38,6 +39,10 @@ func run(args []string) int {
 		return verify(args[1:])
 	case "diff":
 		return diffCmd(args[1:])
+	case "evidence-sign":
+		return evidenceSign(args[1:])
+	case "evidence-diff":
+		return evidenceDiff(args[1:])
 	case "keygen":
 		return keygen(args[1:])
 	case "version", "--version", "-v":
@@ -247,6 +252,79 @@ func serve(args []string) int {
 	}
 	if err = mcpserver.Serve(os.Stdin, os.Stdout, version, call); err != nil {
 		return fail(err, 3)
+	}
+	return 0
+}
+
+// evidenceSign creates a signed declaration; it does not attest runtime semantics.
+func evidenceSign(args []string) int {
+	fs := flag.NewFlagSet("evidence-sign", flag.ContinueOnError)
+	key := fs.String("sign-key", "", "required signing key")
+	out := fs.String("output", "evidence.manifest.json", "signed manifest path")
+	if fs.Parse(args) != nil || fs.NArg() != 1 || *key == "" {
+		return 3
+	}
+	raw, err := os.ReadFile(fs.Arg(0))
+	if err != nil {
+		return fail(err, 4)
+	}
+	var claims []evidence.Claim
+	if err = json.Unmarshal(raw, &claims); err != nil {
+		return fail(err, 4)
+	}
+	priv, err := baseline.LoadPrivateKey(*key)
+	if err != nil {
+		return fail(err, 4)
+	}
+	manifest, err := evidence.Sign(claims, priv)
+	if err != nil {
+		return fail(err, 4)
+	}
+	b, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return fail(err, 4)
+	}
+	if err = os.WriteFile(*out, append(b, '\n'), 0600); err != nil {
+		return fail(err, 4)
+	}
+	fmt.Println("Signed evidence declaration:", *out)
+	return 0
+}
+func evidenceDiff(args []string) int {
+	fs := flag.NewFlagSet("evidence-diff", flag.ContinueOnError)
+	key := fs.String("verify-key", "", "required public key")
+	if fs.Parse(args) != nil || fs.NArg() != 2 || *key == "" {
+		return 3
+	}
+	pub, err := baseline.LoadPublicKey(*key)
+	if err != nil {
+		return fail(err, 4)
+	}
+	old, err := evidence.Read(fs.Arg(0))
+	if err != nil {
+		return fail(err, 4)
+	}
+	live, err := evidence.Read(fs.Arg(1))
+	if err != nil {
+		return fail(err, 4)
+	}
+	if err = old.Verify(pub); err != nil {
+		return fail(err, 5)
+	}
+	if err = live.Verify(pub); err != nil {
+		return fail(err, 5)
+	}
+	result, err := evidence.Compare(old.Claims, live.Claims)
+	if err != nil {
+		return fail(err, 5)
+	}
+	b, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		return fail(err, 4)
+	}
+	fmt.Println(string(b))
+	if !result.Match {
+		return 2
 	}
 	return 0
 }
