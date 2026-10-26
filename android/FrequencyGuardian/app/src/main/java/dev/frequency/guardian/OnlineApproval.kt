@@ -30,14 +30,18 @@ internal class OnlineApproval(private val activity: Activity, private val offlin
     }
     fun initialStatus(): String = prefs.getString("confirmed", null) ?: "Pair a verified server to receive requests. Polling runs only while visible."
     fun close() { worker.shutdownNow() }
+    private fun savedDelivery() = SavedDelivery(prefs.getString("outbox", null), prefs.getString("nonce", null))
     fun discard() {
         check(!busy) { "Wait for the active connection" }
+        val saved = savedDelivery()
+        check(saved.receipt != null && saved.nonce != null) { "No saved delivery" }
         AlertDialog.Builder(activity).setTitle("Discard unconfirmed delivery?")
             .setMessage("Check delivery first. Discarding cannot undo a server acceptance. This request remains consumed locally. Ask the operator to inspect the durable receipt and issue a fresh request if needed.")
             .setNegativeButton("Cancel", null).setPositiveButton("Discard saved delivery") { _, _ ->
-                // A delivery can start after this dialog opens. Never erase its recovery state.
-                if (busy) {
-                    status("Wait for the active connection, then check delivery before discarding.")
+                // Confirmation/polling can replace the outbox while this dialog is open.
+                // Main-thread callbacks serialize this comparison with the commit below.
+                if (!saved.canDiscard(savedDelivery(), busy)) {
+                    status("Delivery changed or a connection is active. Check delivery before discarding again.")
                     return@setPositiveButton
                 }
                 if (prefs.edit().remove("outbox").remove("nonce").commit()) status("Saved delivery discarded; server result may still exist. Check with operator.")

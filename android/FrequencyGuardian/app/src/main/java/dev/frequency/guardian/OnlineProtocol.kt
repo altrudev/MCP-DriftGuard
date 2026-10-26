@@ -2,6 +2,12 @@ package dev.frequency.guardian
 
 import java.net.URI
 
+/** A discard confirmation authorizes removal of exactly this saved delivery. */
+internal data class SavedDelivery(val receipt: String?, val nonce: String?) {
+    fun canDiscard(current: SavedDelivery, busy: Boolean): Boolean =
+        !busy && receipt != null && nonce != null && this == current
+}
+
 internal object OnlineProtocol {
     fun endpoint(text: String): String {
         val uri = URI(text)
