@@ -41,12 +41,18 @@ func TestEndToEnd(t *testing.T) {
 	phases := map[string]int{}
 	original := ""
 	retry := ""
+	timeoutRequest := ""
+	timeoutRequests := 0
 	for _, o := range l.File().Observations {
 		var f fact
 		if e = json.Unmarshal([]byte(o.Value), &f); e != nil {
 			t.Fatal(e)
 		}
 		phases[f.Phase]++
+		if o.Actor == "observer" && o.Branch == "timeout" && f.Operation == "timeout" && f.Phase == "request_observed" {
+			timeoutRequest = f.RequestHash
+			timeoutRequests++
+		}
 		if o.Actor == "observer" && o.Branch == "first" && f.Phase == "request_observed" {
 			original = f.RequestHash
 		}
@@ -65,9 +71,17 @@ func TestEndToEnd(t *testing.T) {
 		if f.Phase == "outcome_unknown" && o.State != "unknown" {
 			t.Fatal("timeout certainty")
 		}
-		if f.Operation == "timeout" && o.Actor == "verifier" && (f.Present == nil || !*f.Present) {
-			t.Fatal("timeout lost committed record")
+		if f.Operation == "timeout" && o.Actor == "verifier" {
+			if f.Present == nil || !*f.Present {
+				t.Fatal("timeout lost committed record")
+			}
+			if timeoutRequest == "" || f.RequestHash != timeoutRequest {
+				t.Fatalf("timeout read-back request hash = %q, want %q", f.RequestHash, timeoutRequest)
+			}
 		}
+	}
+	if timeoutRequests != 1 || timeoutRequest == "" {
+		t.Fatal("expected one nonempty timeout request hash")
 	}
 	if phases["request_observed"] != 4 || phases["response_acknowledged"] != 3 || phases["outcome_unknown"] != 1 || phases["independent_state_observed"] != 4 {
 		t.Fatal(phases)
