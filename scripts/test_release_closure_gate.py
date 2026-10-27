@@ -47,14 +47,50 @@ class RunnerGateTests(unittest.TestCase):
             dispositions=Path(folder)/'dispositions.json'
             issues.write_text(json.dumps([{'number':3,'state':'open'}]))
             dispositions.write_text(json.dumps({'3':{'status':'blocked','evidence':'runtime behavior proof absent; discovery insufficient'}}))
-            for inputs, expected in [([],1),(['--issues',str(issues),'--dispositions',str(dispositions)],0)]:
+            valid=['--issues',str(issues),'--dispositions',str(dispositions)]
+            for inputs, expected in [([],1), (['--release-closure'],1),
+                    (['--release-closure','--issues',str(issues)],1),
+                    (['--release-closure','--dispositions',str(dispositions)],1),
+                    (valid,0), (['--release-closure']+valid,0)]:
                 with patch.object(conformance_suite,'SUITES',[]), patch.object(sys,'argv',['conformance_suite','--output',str(output)]+inputs):
                     self.assertEqual(conformance_suite.main(),expected)
                 report=json.loads(output.read_text())
                 self.assertEqual(report['passed'],expected==0)
                 self.assertIn('release_dispositions',report['suites'])
+                self.assertEqual(report['mode'],'release-closure')
                 if expected:
                     self.assertEqual(report['release_closure'],'not established')
+                else:
+                    self.assertEqual(report['release_closure'],'reviewed dispositions only')
+
+    def test_component_mode_runs_all_suites_without_release_claim(self):
+        import conformance_suite
+        for failed in (False, True):
+            with self.subTest(failed=failed), tempfile.TemporaryDirectory() as folder:
+                output=Path(folder)/'report.json'
+                with patch.object(conformance_suite, 'run', return_value={'exit':int(failed)}) as run, \
+                     patch.object(sys, 'argv', ['conformance_suite','--component-only','--output',str(output)]):
+                    self.assertEqual(conformance_suite.main(),int(failed))
+                self.assertEqual(run.call_args_list, [unittest.mock.call(cmd) for _,cmd in conformance_suite.SUITES])
+                report=json.loads(output.read_text())
+                self.assertEqual(report['mode'],'component-only')
+                self.assertEqual(report['release_closure'],'not established')
+                self.assertEqual(report['passed'],not failed)
+                self.assertEqual(set(report['suites']),set(dict(conformance_suite.SUITES)))
+                self.assertNotIn('release_dispositions',report['suites'])
+
+    def test_component_mode_rejects_release_requests(self):
+        import conformance_suite
+        for inputs in (['--release-closure'], ['--issues','issues.json'],
+                       ['--dispositions','dispositions.json'],
+                       ['--issues','issues.json','--dispositions','dispositions.json']):
+            with self.subTest(inputs=inputs), \
+                 patch.object(sys,'argv',['conformance_suite','--component-only']+inputs), \
+                 patch.object(conformance_suite,'run') as run:
+                with self.assertRaises(SystemExit) as error:
+                    conformance_suite.main()
+                self.assertEqual(error.exception.code,2)
+                run.assert_not_called()
 
 if __name__ == '__main__':
     unittest.main()

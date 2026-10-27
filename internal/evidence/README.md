@@ -115,15 +115,22 @@ fixtures, not live deployment proof.
 
 ## Conformance and release dispositions
 
-The conformance runner always tests negative and positive closure-gate dispositions
-and always invokes the actual release gate. Provide local reviewed inputs:
+The conformance runner always tests negative and positive closure-gate dispositions.
+CI explicitly uses `--component-only`: it runs every component suite, omits the
+actual disposition gate, and reports `mode: component-only` and
+`release_closure: not established`, even when `passed` is true. Component mode
+rejects `--issues` and `--dispositions` rather than ignoring release inputs.
+Revision-bound local evidence validation is not release authorization.
+
+For release closure, explicitly invoke the actual gate with local reviewed inputs:
 
 ```sh
 GOCACHE=/tmp/mcpdrift-gocache python3 scripts/conformance_suite.py \
-  --issues /path/to/github-issues.json --dispositions /path/to/reviewed-dispositions.json
+  --release-closure --issues /path/to/github-issues.json --dispositions /path/to/reviewed-dispositions.json
 ```
 
-Without those files, the mandatory release gate fails closed; no GitHub API access
+The default invocation also selects release closure. Without both files, the
+mandatory release gate fails closed; no GitHub API access
 is attempted. Passing synthetic gate tests cannot establish release closure. An open
 issue may be `blocked` or `deferred` with explicit evidence, but cannot be `verified`.
 A passing disposition inventory is not certification or proof that all issues are
