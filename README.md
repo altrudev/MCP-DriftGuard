@@ -233,7 +233,7 @@ This suite is included in `scripts/conformance_suite.py` and CI. Measurements ar
 
 ## Reproducible security conformance
 
-From a clean source checkout, run `python3 scripts/conformance_suite.py --output conformance.json` (Go 1.23+, Python 3.10+). The versioned runner exercises unit/race/static/documentation checks and both isolated HTTP and stdio PASS/FAIL acceptance harnesses. Evidence includes the source revision and per-suite status. A passing local suite is not certification or independent reviewer acceptance.
+From a clean source checkout, run `python3 scripts/conformance_suite.py --component-only --output conformance.json` (Go 1.23+, Python 3.10+). The versioned runner exercises unit/race/static/documentation checks and both isolated HTTP and stdio PASS/FAIL acceptance harnesses. Evidence includes the source revision and per-suite status. A passing component suite does not establish release closure, certification or independent reviewer acceptance. For release closure, use `--release-closure --issues /path/to/github-issues.json --dispositions /path/to/reviewed-dispositions.json`. The default invocation also requires release inputs and fails closed when they are absent; component mode rejects release inputs.
 
 ## Development
 
@@ -316,3 +316,7 @@ retryable SQLite drift/recovery journal and no remote service required. Agent mo
 returns structured actionable results without claiming unsolicited host push.
 A headless VPS cannot reach a customer device unaided. See
 [monitor setup and notification options](docs/PRODUCTION-MONITOR.md).
+
+An explicitly opt-in [local MCP execution evidence demo](docs/ISSUE3-EXECUTION-DEMO.md)
+exercises the signed actor ledger against a controlled mock, governed observer,
+and separate read-only state verifier. It does not enable production execution.

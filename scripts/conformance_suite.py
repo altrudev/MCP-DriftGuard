@@ -30,10 +30,18 @@ def main():
     ap.add_argument("--output",help="write sanitized JSON evidence to this path")
     ap.add_argument("--issues", help="local GitHub issue inventory for release disposition gate")
     ap.add_argument("--dispositions", help="reviewed local release dispositions")
+    mode=ap.add_mutually_exclusive_group()
+    mode.add_argument("--component-only", action="store_true",
+                      help="run component checks only; does not establish release closure")
+    mode.add_argument("--release-closure", action="store_true",
+                      help="require reviewed release dispositions (the default)")
     args=ap.parse_args()
+    if args.component_only and (args.issues is not None or args.dispositions is not None):
+        ap.error("--component-only cannot be combined with --issues or --dispositions")
     commit=subprocess.run(["git","rev-parse","HEAD"],cwd=ROOT,capture_output=True,text=True,check=True).stdout.strip()
     report={"format":"mcpdrift-conformance-evidence/v1","commit":commit,
             "platform":platform.system(),"arch":platform.machine(),
+            "mode":"component-only" if args.component_only else "release-closure",
             "timestamp_utc":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
             "limitations":["Local tests are not formal certification",
                            "Gate tests use synthetic inventories; release closure requires --issues and --dispositions",
@@ -44,13 +52,17 @@ def main():
         result=run(cmd)
         report["suites"][label]=result
         print(label,"PASS" if result["exit"]==0 else "FAIL",flush=True)
-    # Mandatory release gate; absent local inputs fail closed without network.
-    cmd=[sys.executable,"scripts/release_closure_gate.py"]
-    if args.issues: cmd += ["--issues",args.issues]
-    if args.dispositions: cmd += ["--dispositions",args.dispositions]
-    report["suites"]["release_dispositions"]=run(cmd)
-    print("release_dispositions", "PASS" if report["suites"]["release_dispositions"]["exit"]==0 else "FAIL", flush=True)
-    report["release_closure"]="reviewed dispositions only" if report["suites"]["release_dispositions"]["exit"]==0 else "not established"
+    report["release_closure"]="not established"
+    if not args.component_only:
+        # Release requests, including the default invocation, always fail closed.
+        cmd=[sys.executable,"scripts/release_closure_gate.py"]
+        if args.issues: cmd += ["--issues",args.issues]
+        if args.dispositions: cmd += ["--dispositions",args.dispositions]
+        result=run(cmd)
+        report["suites"]["release_dispositions"]=result
+        print("release_dispositions", "PASS" if result["exit"]==0 else "FAIL", flush=True)
+        if result["exit"]==0:
+            report["release_closure"]="reviewed dispositions only"
     report["passed"]=all(x["exit"]==0 for x in report["suites"].values())
     payload=json.dumps(report,indent=2,sort_keys=True)+"\n"
     if args.output:
