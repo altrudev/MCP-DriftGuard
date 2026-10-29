@@ -32,7 +32,7 @@ func (c *Client) inspectLegacy(ctx context.Context, endpoint string, s *canonica
 			"clientInfo":      map[string]any{"name": "mcpdrift", "version": "0.1.0"},
 		},
 	}
-	resp, session, proto, err := c.legacyRPC(ctx, endpoint, "", initPayload)
+	resp, session, proto, err := c.legacyRPC(ctx, endpoint, "", 1, initPayload)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func (c *Client) inspectLegacy(ctx context.Context, endpoint string, s *canonica
 	return nil
 }
 
-func (c *Client) legacyRPC(ctx context.Context, endpoint, session string, payload any) (rpcResponse, string, string, error) {
+func (c *Client) legacyRPC(ctx context.Context, endpoint, session string, id int, payload any) (rpcResponse, string, string, error) {
 	b, _ := json.Marshal(payload)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(b))
 	if err != nil {
@@ -161,6 +161,9 @@ func (c *Client) legacyRPC(ctx context.Context, endpoint, session string, payloa
 	var rr rpcResponse
 	if err := json.Unmarshal(raw, &rr); err != nil {
 		return rr, "", res.Proto, err
+	}
+	if err := rr.validateID(id); err != nil {
+		return rpcResponse{}, "", res.Proto, err
 	}
 	return rr, res.Header.Get("Mcp-Session-Id"), res.Proto, nil
 }
@@ -197,8 +200,8 @@ func (c *Client) paginateLegacy(ctx context.Context, endpoint, session string, i
 			params["cursor"] = cursor
 		}
 		payload := map[string]any{"jsonrpc": "2.0", "id": *id, "method": method, "params": params}
+		r, _, _, err := c.legacyRPC(ctx, endpoint, session, *id, payload)
 		(*id)++
-		r, _, _, err := c.legacyRPC(ctx, endpoint, session, payload)
 		if err != nil {
 			return fmt.Errorf("%s page %d: %w", method, page+1, err)
 		}

@@ -17,13 +17,23 @@ import (
 
 type rpcResponse struct {
 	JSONRPC string          `json:"jsonrpc"`
-	ID      any             `json:"id"`
+	ID      json.RawMessage `json:"id"`
 	Result  json.RawMessage `json:"result"`
 	Error   *struct {
 		Code    int             `json:"code"`
 		Message string          `json:"message"`
 		Data    json.RawMessage `json:"data,omitempty"`
 	} `json:"error"`
+}
+
+// HTTP RPC calls use integer IDs. Reject absent, null, differently typed, or
+// unrelated IDs before a result or RPC error can influence inspection/fallback.
+func (r rpcResponse) validateID(expected int) error {
+	var id *int
+	if err := json.Unmarshal(r.ID, &id); err != nil || id == nil || *id != expected {
+		return errors.New("HTTP JSON-RPC response ID missing or mismatched")
+	}
+	return nil
 }
 
 type discoverResult struct {
@@ -189,6 +199,9 @@ func (c *Client) modernRPC(ctx context.Context, endpoint string, id int, method 
 	var rr rpcResponse
 	if err := json.Unmarshal(raw, &rr); err != nil {
 		return rr, res.Proto, err
+	}
+	if err := rr.validateID(id); err != nil {
+		return rpcResponse{}, res.Proto, err
 	}
 	return rr, res.Proto, nil
 }
