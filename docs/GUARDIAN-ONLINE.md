@@ -45,9 +45,9 @@ state. Do not expose the development server on an untrusted network yet.
    Use the verified candidate SHA-256 in the authority's device ledger as `DEVICE`.
    Do not substitute a claimed fingerprint from the phone. For a still-valid
    existing offline enrollment, reuse that device record and skip generating a
-   candidate or importing another enrollment. Grants last at most 24 hours; this
-   prototype has no automatic renewal. Expired enrollment requires independent
-   replacement with a fresh candidate after revocation, as in the offline guide.
+   candidate or importing another enrollment. Grants are valid until revoked; no
+   renewal is needed. Revoke on the authority first for a lost or replaced phone,
+   then enroll a fresh candidate, as in the offline guide.
 5. Configure an operator-owned HTTPS origin with a certificate chain trusted by
    Android's system trust store and a matching hostname. Supply certificate PEM and
    private key files yourself. Keep the TLS key private. No self-signed trust

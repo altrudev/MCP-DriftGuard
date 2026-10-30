@@ -15,16 +15,20 @@ fun main() {
         val sig = Signature.getInstance("SHA256withECDSA").run { initSign(keys.private); update(bytes); sign() }
         return bytes.b64() + "." + sig.b64()
     }
-    val grant = TrustProtocol.Statement(1, "a".repeat(64), "b".repeat(64), "c".repeat(64), "d".repeat(64), 1000, 2000, "")
+    val grant = TrustProtocol.Statement(1, "a".repeat(64), "b".repeat(64), "c".repeat(64), "d".repeat(64), 1000, TrustProtocol.UNTIL_REVOKED, "")
     val valid = envelope(grant)
     check(TrustProtocol.verify(valid, authority, 1000) == grant)
+    // Until-revoked grant stays valid far in the future (year ~2286 and later).
+    check(TrustProtocol.verify(valid, authority, 9_999_999_999L) == grant)
     refuses { TrustProtocol.verify(valid, other.public, 1000) }
     refuses { TrustProtocol.verify(valid, authority, 999) }
-    refuses { TrustProtocol.verify(valid, authority, 2000) }
     refuses { TrustProtocol.verify(valid + ".extra", authority, 1000) }
     refuses { TrustProtocol.verify("A".repeat(16001), authority, 1000) }
     refuses { TrustProtocol.verify(envelope(grant, byteArrayOf(0)), authority, 1000) }
-    refuses { TrustProtocol.verify(envelope(grant.copy(expires = 87401)), authority, 1000) }
+    // Grants with any finite expiry, including the former 24h form, are refused.
+    refuses { TrustProtocol.verify(envelope(grant.copy(expires = 2000)), authority, 1000) }
+    refuses { TrustProtocol.verify(envelope(grant.copy(expires = 87400)), authority, 1000) }
+    refuses { TrustProtocol.verify(envelope(grant.copy(expires = TrustProtocol.UNTIL_REVOKED - 1)), authority, 1000) }
     refuses { TrustProtocol.bound(grant, "x", grant.signer) }
     refuses { TrustProtocol.bound(grant, grant.device, "x") }
     refuses { TrustProtocol.bound(grant, grant.device, grant.signer, "x") }
@@ -35,6 +39,9 @@ fun main() {
     check(TrustProtocol.verify(envelope(request), authority, 1119) == request)
     refuses { TrustProtocol.verify(envelope(request), authority, 1120) }
     refuses { TrustProtocol.verify(envelope(request.copy(expires = 1121)), authority, 1000) }
+    // The until-revoked expiry is only for grants; requests and revocations stay at 120s.
+    refuses { TrustProtocol.verify(envelope(request.copy(expires = TrustProtocol.UNTIL_REVOKED)), authority, 1000) }
+    refuses { TrustProtocol.verify(envelope(request.copy(kind = 3, action = "", expires = TrustProtocol.UNTIL_REVOKED)), authority, 1000) }
     refuses { envelope(request.copy(action = "")) }
     refuses { envelope(request.copy(action = "a\nb")) }
     refuses { envelope(request.copy(action = "a\u202eb")) }

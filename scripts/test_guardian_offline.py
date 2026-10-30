@@ -86,8 +86,35 @@ class OfflineTests(unittest.TestCase):
         spki = devicekey.public_key().public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
         device = g.digest(spki)
         self.state["devices"][device] = dict(spki=g.b64(spki), signer=self.signer, enrollment="c" * 64,
-            expires=2000, revoked=False, attestation=export)
+            expires=g.UNTIL_REVOKED, revoked=False, attestation=export)
         return devicekey, device, export
+
+    def test_enrollment_grant_is_until_revoked_only(self):
+        args = ("a" * 64, "b" * 64, "c" * 64, "d" * 64)
+        g.payload(1, *args, 1000, g.UNTIL_REVOKED)
+        for finite in (1001, 1000 + 86400, g.UNTIL_REVOKED - 1):
+            with self.assertRaises(ValueError):
+                g.payload(1, *args, 1000, finite)
+        # Requests and revocations never inherit the until-revoked expiry.
+        with self.assertRaises(ValueError):
+            g.payload(2, *args, 1000, g.UNTIL_REVOKED, "Action")
+        with self.assertRaises(ValueError):
+            g.payload(3, *args, 1000, g.UNTIL_REVOKED)
+
+    def test_enrollment_survives_years_until_revoked(self):
+        devicekey, device, _ = self.record()
+        years_later = 1000 + 10 * 365 * 86400
+        with patch.object(g, "check_revocation"):
+            envelope = g.request(self.directory, self.key, self.state, years_later, device, "Approve baseline")
+            self.assertEqual(self.state["requests"][next(reversed(self.state["requests"]))]["expires"], years_later + 120)
+            verdict = g.verify_receipt(self.directory, self.state, years_later + 1, self.receipt(devicekey, device, envelope))
+            self.assertEqual(verdict["verified_decision"], "approve")
+            pending = g.request(self.directory, self.key, self.state, years_later + 2, device, "Pending")
+            g.revoke(self.directory, self.key, self.state, years_later + 3, device)
+            with self.assertRaises(ValueError):
+                g.request(self.directory, self.key, self.state, years_later + 4, device, "After revoke")
+            with self.assertRaises(ValueError):
+                g.verify_receipt(self.directory, self.state, years_later + 4, self.receipt(devicekey, device, pending))
 
     def receipt(self, key, device, envelope, approved=True):
         body = g.DECISION + bytes([int(approved)]) + g.unb64(envelope.split(".")[0])
@@ -219,6 +246,10 @@ class OfflineTests(unittest.TestCase):
                 self.fail(error.stderr)
             self.assertEqual(len(envelope.split(".")), 2)
             self.assertEqual(len(self.state["devices"]), 1)
+            # Real enrollment issues an until-revoked grant, in the signed bytes and the ledger.
+            body = g.unb64(envelope.split(".")[0])
+            self.assertEqual(g.struct.unpack(">q", body[-10:-2])[0], g.UNTIL_REVOKED)
+            self.assertEqual(next(iter(self.state["devices"].values()))["expires"], g.UNTIL_REVOKED)
             with self.assertRaises(Exception):
                 g.enroll(self.directory, self.key, policy, self.state, int(g.time.time()), source, challenge, self.binaries)
         # Independent checker must reject actual signed certificates with unsafe policy.
