@@ -16,6 +16,7 @@ import time
 from local_notifications import notify
 
 ENDPOINT = 'http://127.0.0.1:8765/mcp'
+GUARDIAN_TRUST_MODEL = 'GUARDIAN_PHONE_APPROVED'
 ACTIONS = {'healthy': 'Recovered; retain approved trust configuration.',
            'drift': 'Investigate inventory changes; independent authority must review any replacement baseline.',
            'error': 'Check endpoint availability, approved baseline, external public key and verifier installation.'}
@@ -83,6 +84,17 @@ def check(cfg, tmp):
                     digest.update(chunk)
             if digest.hexdigest() != expected:
                 raise ValueError(name + ' differs from approved sha256')
+        if cfg.get('trust_model') == GUARDIAN_TRUST_MODEL and 'guardian_approval' not in cfg:
+            raise ValueError('trust_model ' + GUARDIAN_TRUST_MODEL + ' requires guardian_approval')
+        if 'guardian_approval' in cfg:
+            # Phone approval of this exact baseline, checked before the verifier runs.
+            try:
+                import guardian_baseline_approval as approval
+                approval.check_config(cfg, ENDPOINT)
+            except ImportError as exc:
+                return 'error', 'guardian approval: verifier unavailable: ' + str(exc)[:200]
+            except (ValueError, KeyError, OSError) as exc:
+                return 'error', 'guardian approval: ' + str(exc)[:300]
         # Explicit public key required: never permit unsigned verification.
         env = {'PATH': '/usr/bin:/bin', 'TMPDIR': str(tmp), 'GOMEMLIMIT': '192MiB', 'GOMAXPROCS': '2'}
         with tempfile.TemporaryFile(dir=tmp) as output:
