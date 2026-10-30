@@ -112,8 +112,8 @@ moving this source checkout elsewhere.
    single-request and can be denied availability. It is for controlled prototyping.
 6. Complete a production signing/custody and deployment ceremony. No release key,
    valid deployment certificate, production domain, execution adapter, renewal
-   ceremony or automatic recovery is supplied. Enrollment currently expires in
-   24h and replacement requires fresh independent verification after revocation.
+   ceremony or automatic recovery is supplied. Enrollment is valid until revoked;
+   replacement requires fresh independent verification after revocation.
 
 ## Deployment steps
 

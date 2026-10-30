@@ -15,6 +15,8 @@ import java.util.Base64
 /** Offline authority statements. The authority is provisioned independently, never from an export. */
 internal object TrustProtocol {
     const val DOMAIN = "frequency-guardian/offline-trust/v1"
+    /** Enrollment grants (kind 1) carry exactly this expiry: valid until revoked. */
+    const val UNTIL_REVOKED = Long.MAX_VALUE
     data class Statement(val kind: Int, val device: String, val signer: String, val enrollment: String,
         val nonce: String, val issued: Long, val expires: Long, val action: String)
     fun hash(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).hex()
@@ -51,7 +53,8 @@ internal object TrustProtocol {
         val s = Statement(input.readUnsignedByte(), input.readUTF(), input.readUTF(), input.readUTF(), input.readUTF(), input.readLong(), input.readLong(), input.readUTF())
         require(input.available() == 0 && payload(s).contentEquals(body)) { "Noncanonical statement" }
         require(s.issued > 0 && s.issued <= now && s.expires > now && s.expires > s.issued)
-        require(s.expires - s.issued <= if (s.kind == 1) 86400L else 120L) { "Statement lifetime exceeded" }
+        if (s.kind == 1) require(s.expires == UNTIL_REVOKED) { "Enrollment grant must be valid until revoked" }
+        else require(s.expires - s.issued <= 120L) { "Statement lifetime exceeded" }
         return s
     }
     fun bound(s: Statement, device: String, signer: String, enrollment: String? = null) {

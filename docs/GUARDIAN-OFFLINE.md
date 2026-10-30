@@ -70,7 +70,8 @@ configured APK signer, hardware noAuthRequired, signing/SHA-256 authorizations,
 locked verified boot, and the patch floor. It fetches certificate status from the
 fixed authenticated HTTPS Google attestation status endpoint. Missing network,
 malformed/stale status (HTTP Date/Age bounded to five minutes), any listed chain certificate, unsafe key or failed check refuses.
-The challenge is durably consumed before grant signing. Enrollment expires in 24h.
+The challenge is durably consumed before grant signing. Enrollment is valid until
+revoked: the grant carries the fixed expiry 2^63-1 and any finite grant expiry is refused.
 The authority ledger stores the **verified leaf key**, not a self-asserted app key.
 4. Transfer `enrollment.fg` to the phone and **Import signed enrollment / request /
    revocation**. Its pinned authority signature, candidate key and installed APK
@@ -146,7 +147,7 @@ Payload uses Java DataOutputStream encoding: writeUTF
 SHA-256, enrollment ID, nonce), two signed big-endian 64-bit Unix seconds
 (issued, expires), then writeUTF action. The parser re-encodes and requires exact
 canonical bytes. Limits: 16,000 transport characters, 4,096 action characters,
-24h grants, 120s requests/revocations. No control/format characters in displayed
+until-revoked grants (expiry exactly 2^63-1), 120s requests/revocations. No control/format characters in displayed
 actions. The authority uses the printable ASCII subset of writeUTF.
 
 Decision bytes are ASCII `frequency-guardian/offline-decision/v1` + NUL + one-byte
@@ -160,7 +161,8 @@ block operations, rather than evicting replay protection. No pruning is provided
 Wall-clock rollback below a persisted watermark blocks signing. Pending reviews
 also have a monotonic two-minute bound. Protect authority time and disk state;
 local storage/clock rollback by a privileged attacker is not solved by app code.
-Offline revocation propagation is bounded by request/grant lifetime on the phone;
+Grants no longer expire, so an offline phone keeps its enrollment until it imports a
+signed revocation or is revoked locally; pending requests still expire in 120s;
 final verifier acceptance always consults its current local revocation ledger and
 live certificate status. Lack of access to the status service fails closed.
 

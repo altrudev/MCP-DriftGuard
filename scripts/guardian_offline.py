@@ -25,6 +25,9 @@ from cryptography.hazmat.primitives.asymmetric import ec
 
 DOMAIN = b"frequency-guardian/offline-trust/v1"
 DECISION = b"frequency-guardian/offline-decision/v1\0"
+# Enrollment grants (kind 1) carry this exact expiry and stay valid until revoked.
+# Requests and revocations keep their 120-second lifetime.
+UNTIL_REVOKED = 2**63 - 1
 REVOCATION_URL = "https://android.googleapis.com/attestation/status"
 
 
@@ -73,7 +76,10 @@ def payload(kind, device, signer, enrollment, nonce, issued, expires, action="")
             raise ValueError("expected SHA-256 hex / 32-byte nonce")
     if nonce == "0" * 64 or kind not in (1, 2, 3):
         raise ValueError("invalid statement")
-    if not (0 < issued < expires and expires - issued <= (86400 if kind == 1 else 120)):
+    if kind == 1:
+        if not (0 < issued < expires == UNTIL_REVOKED):
+            raise ValueError("enrollment grant must be valid until revoked")
+    elif not (0 < issued < expires and expires - issued <= 120):
         raise ValueError("invalid lifetime")
     if (kind == 2 and not action.strip()) or (kind != 2 and action):
         raise ValueError("invalid action")
@@ -189,9 +195,9 @@ def enroll(directory, key, policy, state, now, attestation, challenge, binaries)
         raise ValueError("device previously enrolled or revoked; fresh key required")
     enrollment = secrets.token_hex(32)
     body = payload(1, device, policy["apk_signer_sha256"], enrollment,
-                   secrets.token_hex(32), now, now + 86400)
+                   secrets.token_hex(32), now, UNTIL_REVOKED)
     state["devices"][device] = dict(spki=b64(spki), enrollment=enrollment,
-        signer=policy["apk_signer_sha256"], expires=now + 86400, revoked=False, attestation=export)
+        signer=policy["apk_signer_sha256"], expires=UNTIL_REVOKED, revoked=False, attestation=export)
     atomic_json(directory / "state.json", state)
     return sign(key, body)
 
