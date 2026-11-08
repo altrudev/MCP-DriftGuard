@@ -1,4 +1,4 @@
-> Historical record. Run evidence referenced as `evidence/...` now lives on the `evidence-archive` branch; Guardian, broker and monitor material on the `guardian-extract` branch.
+> Historical record. Run evidence referenced as `evidence/...` now lives on the `evidence-archive` branch; Guardian, broker and monitor material on the [DriftGuard-Mobile](https://github.com/altrudev/DriftGuard-Mobile) repository.
 
 # MCP DriftGuard operational acceptance — 2026-10-23
 

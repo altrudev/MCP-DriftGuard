@@ -290,4 +290,4 @@ See [stdio server configuration](INSTALL.md#driftguard-as-an-mcp-stdio-server).
 
 Scheduled monitoring, desktop notifications and the optional Android approval app
 are not part of the core verifier. They are maintained separately (currently on the
-`guardian-extract` branch).
+[DriftGuard-Mobile](https://github.com/altrudev/DriftGuard-Mobile) repository).

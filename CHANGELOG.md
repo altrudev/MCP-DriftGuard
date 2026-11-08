@@ -1,6 +1,6 @@
 # Unreleased — core split
 
-- Separated the standalone verifier from optional components. The Android approval app (Frequency Guardian), Rust approval broker, deployment units, production monitor, desktop notifications and their docs moved to the `guardian-extract` branch, unchanged.
+- Separated the standalone verifier from optional components. The Android approval app (Frequency Guardian), Rust approval broker, deployment units, production monitor, desktop notifications and their docs moved to the [DriftGuard-Mobile](https://github.com/altrudev/DriftGuard-Mobile) repository, unchanged.
 - Moved dated run evidence (`evidence/`) to the `evidence-archive` branch.
 - Removed Guardian, Rust and monitor steps from CI, the conformance suite and the audit runner.
 - Added CONTRIBUTING.md (DCO sign-off required) and GOVERNANCE.md.
