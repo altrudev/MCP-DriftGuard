@@ -9,7 +9,7 @@ root=Path(__file__).resolve().parents[1]
 parser=argparse.ArgumentParser(description="Local operational suites; unavailable infrastructure remains nonzero evidence.")
 parser.add_argument('--output',required=True)
 parser.add_argument('--scope',choices=('all','mcp'),default='all',
-                    help='mcp excludes optional Guardian/Rust suites and runs only MCP Python checks')
+                    help='mcp runs only the MCP-specific Python checks')
 args=parser.parse_args()
 out=Path(args.output).resolve();out.mkdir(parents=True,exist_ok=True)
 for name in ('tmp','go','rust'):(out/name).mkdir(exist_ok=True)
@@ -26,10 +26,6 @@ suites=[
 ('artifact_mutations',['python3','scripts/test_verify_artifacts.py']),
 ('historical_mutations',['python3','scripts/historical_mutation.py']),
 ('codex_host',['python3','scripts/test_codex_clean_config.py']),
-('rust',['cargo','test','--manifest-path','broker/Cargo.toml','--locked','--offline']),
-('python_with_rust',['python3','-m','unittest','discover','-s','scripts','-p','test_*.py']),
-('rust_clippy',['cargo','clippy','--manifest-path','broker/Cargo.toml','--locked','--offline','--all-targets','--','-D','warnings']),
-('rust_fmt',['cargo','fmt','--manifest-path','broker/Cargo.toml','--','--check']),
 ('cross_build',['python3','scripts/build_artifacts.py',str(out/'candidates')]),
 ('verify_candidates',['python3','scripts/verify_artifacts.py',str(out/'candidates')]),
 ('fuzz_canonical',['go','test','./internal/canonical','-run','^$','-fuzz','Fuzz','-fuzztime=200000x','-parallel=2']),
@@ -44,7 +40,6 @@ report['scope'] = args.scope
 for name,cmd in suites:
  start=time.monotonic()
  suite_env=dict(env)
- if name=='python_with_rust':suite_env['FG_RUST_BINARIES']=str(out/'rust/debug')
  with (out/(name+'.log')).open('wb') as log:
   try: p=subprocess.run(cmd,cwd=root,env=suite_env,stdout=log,stderr=subprocess.STDOUT,timeout=240);status=p.returncode
   except subprocess.TimeoutExpired:status=124

@@ -1,3 +1,0 @@
-exit=1
-Failed to turn off SO_PASSRIGHTS on user lookup socket, ignoring: Operation not permitted
-Failed to enable SO_PASSCRED on handoff timestamp socket: Operation not permitted

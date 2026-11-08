@@ -42,3 +42,7 @@ Commercial services should consume the same public baseline and result formats w
 ## Independence
 
 The core has no required dependency on DDC, DSR, DDCal, Altru.dev infrastructure, an LLM provider, or a hosted DriftGuard account. Optional adapters must remain separable from the core verification path.
+
+## Naming
+
+Any hosted or commercial offering will use its own product name. "MCP DriftGuard" refers to this open-source verifier, so the name can move to a neutral foundation together with the project without affecting a commercial service.
