@@ -1,0 +1,12 @@
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/dev/shm -Djava.io.tmpdir=/dev/shm/frequency-guardian-tmp
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/dev/shm -Djava.io.tmpdir=/dev/shm/frequency-guardian-tmp
+PASS: diagnostics schema, ten statuses, safe defaults, JSON escaping, real signature and negative verification
+PASS: exact v1 encoding, nonce independence, immutable fields, time bounds, single consumption, ECDSA verification, tamper and cross-domain rejection
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/dev/shm -Djava.io.tmpdir=/dev/shm/frequency-guardian-tmp
+PASS: offline trust authority signature, canonical encoding, device/APK/enrollment binding, expiry, bounded input, visible action text, approve/deny domain separation; 19 negative cases
+PASS: independent JSON parser, ten checks, three statuses and escaped detail roundtrip
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/dev/shm -Djava.io.tmpdir=/dev/shm/frequency-guardian-tmp
+PASS: independent Python authority request verified by native Kotlin protocol; both decisions signed
+PASS: independent Python verifier matches exact Kotlin Approve/Deny bytes and verifies both signatures
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/dev/shm -Djava.io.tmpdir=/dev/shm/frequency-guardian-tmp
+PASS: online HTTPS origin and pairing token validation (13 cases)

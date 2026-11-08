@@ -1,0 +1,13 @@
+{
+  "schema": "mcpdrift-release-integrity/v1",
+  "commit": "6452314d26e25452e475c78bf401e15922ec7ac3",
+  "verdict": "BLOCKED",
+  "failures": [
+    "conformance aggregate not PASS",
+    "required suite absent or failed: go_unit",
+    "required suite absent or failed: go_race",
+    "required suite absent or failed: http_acceptance"
+  ],
+  "hosted_ci": "UNVERIFIED",
+  "release_authorized": false
+}

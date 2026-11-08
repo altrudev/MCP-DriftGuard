@@ -1,0 +1,16 @@
+test_fail_closed_missing_approval (test_production_monitor.MonitorTests.test_fail_closed_missing_approval) ... ok
+test_failed_transaction_preserves_previous_state (test_production_monitor.MonitorTests.test_failed_transaction_preserves_previous_state) ... ok
+test_missing_config_durable_across_processes (test_production_monitor.MonitorTests.test_missing_config_durable_across_processes) ... ok
+test_real_verifier_drift_down_bad_key_recovery (test_production_monitor.MonitorTests.test_real_verifier_drift_down_bad_key_recovery) ... skipped 'sandbox denies fixture sockets: [Errno 1] Operation not permitted'
+test_transitions_dedup_and_durability (test_production_monitor.MonitorTests.test_transitions_dedup_and_durability) ... ok
+test_verifier_exit_mapping_and_timeout (test_production_monitor.MonitorTests.test_verifier_exit_mapping_and_timeout) ... ok
+test_cli_delivery_failure_cannot_report_success (test_production_monitor.ReleaseTests.test_cli_delivery_failure_cannot_report_success) ... ok
+test_install_in_disposable_user_tree_never_activates (test_production_monitor.ReleaseTests.test_install_in_disposable_user_tree_never_activates) ... ok
+test_pins_fail_before_process (test_production_monitor.ReleaseTests.test_pins_fail_before_process) ... ok
+test_real_delivery_retry_order_recovery_and_restart (test_production_monitor.ReleaseTests.test_real_delivery_retry_order_recovery_and_restart) ... ok
+test_real_process_deadline (test_production_monitor.ReleaseTests.test_real_process_deadline) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 2.108s
+
+OK (skipped=1)

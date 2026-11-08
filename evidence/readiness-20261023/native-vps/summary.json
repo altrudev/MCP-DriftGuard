@@ -1,0 +1,27 @@
+[
+  {
+    "name": "conformance",
+    "exit": 0,
+    "elapsed_seconds": 28.97
+  },
+  {
+    "name": "race",
+    "exit": 0,
+    "elapsed_seconds": 0.16
+  },
+  {
+    "name": "vet",
+    "exit": 0,
+    "elapsed_seconds": 0.15
+  },
+  {
+    "name": "build_current",
+    "exit": 0,
+    "elapsed_seconds": 0.86
+  },
+  {
+    "name": "real_conduit",
+    "exit": 0,
+    "elapsed_seconds": 0.2
+  }
+]

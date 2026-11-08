@@ -1,0 +1,35 @@
+{
+  "format": "mcpdrift-local-discovery/v1",
+  "endpoint": "http://127.0.0.1:8765/mcp",
+  "binary_sha256": "3a15556ec78b5d25a280a365f697dc333c5411ea7852f1f7ac67cce112dc0c78",
+  "timestamp_utc": "2026-10-23T15:17:19Z",
+  "baseline_approved": false,
+  "monitoring_enabled": false,
+  "limitations": [
+    "JSON HTTP discovery only",
+    "inventory agreement is not baseline approval"
+  ],
+  "independent_discovery": "PASS",
+  "inspector_exit": 0,
+  "inspector_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "inspector": "PASS",
+  "inventories": {
+    "tools": {
+      "count": 6,
+      "names_match": true,
+      "names_sha256": "e839157038f409970a5ed69c47f34a89d006fd1c5de40f91aa0191676c953520"
+    },
+    "resources": {
+      "count": 0,
+      "names_match": true,
+      "names_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "prompts": {
+      "count": 0,
+      "names_match": true,
+      "names_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  },
+  "inventory_agreement": true,
+  "passed": true
+}

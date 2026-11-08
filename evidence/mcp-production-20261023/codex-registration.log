@@ -1,0 +1,2 @@
+{"registered_executable": "/home/ubuntu/.local/bin/mcpdrift", "arguments_sha256": "83ab89cee471dd7a840d44608ab24fb8a0bfa38dc537a3ac174ff942780bc917", "enabled": true, "isolated_home_removed": true}
+PASS: clean Codex MCP registration, inspect, removal; agent execution NOT TESTED

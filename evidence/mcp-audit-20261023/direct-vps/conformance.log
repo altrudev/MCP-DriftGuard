@@ -1,0 +1,7 @@
+go_unit PASS
+go_race PASS
+go_vet PASS
+docs PASS
+http_acceptance PASS
+stdio_acceptance PASS
+extreme_limits PASS

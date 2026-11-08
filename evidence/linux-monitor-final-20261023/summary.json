@@ -1,0 +1,39 @@
+{
+  "timestamp_utc": "2026-10-23T18:53:54.532368+00:00",
+  "base_commit": "d59d0a1ce87c02c9569004328b1f9927dda3c22a",
+  "working_tree_changes": true,
+  "status": "IMPLEMENTED_WITH_RELEASE_BLOCKERS",
+  "checks": {
+    "monitor_tests": "10 passed; 1 socket-dependent test skipped",
+    "go_test_all": "BLOCKED: sandbox denies httptest socket creation in internal/observe",
+    "go_vet": "PASS",
+    "go_race_non_network_packages": "PASS: cmd/mcpdrift, baseline, canonical, diff, mcpserver, report",
+    "stdio_acceptance": "PASS: real CLI clean/drift, malformed inputs, isolated environment, descendant cleanup",
+    "docs_check": "PASS",
+    "systemd_user_unit_verify": "BLOCKED: sandbox socket operations denied; see unit-verify.log"
+  },
+  "blockers": [
+    "Independent authentication of production public key and approval of signed baseline",
+    "Signed HTTP monitor acceptance and full Go tests in socket-capable Linux environment",
+    "Real user systemd manager and cgroup resource-control validation",
+    "Chosen external alert receiver receipt and retry acceptance",
+    "Independent reviewer acceptance and production activation authorization"
+  ],
+  "safety": {
+    "production_trust_approved": false,
+    "baseline_created_or_adopted": false,
+    "timer_activated": false,
+    "conduit_modified": false,
+    "prior_evidence_modified_by_this_task": false
+  },
+  "sha256": {
+    "scripts/production_monitor.py": "33cefc164f67131a528375044be63060d51f1667ae12b954c1501172a105474a",
+    "scripts/install_user_monitor.py": "54d65f73ed55ba164bcfb04211174f6d98db9be4ee18c3cd113f4b5fc83cfed8",
+    "scripts/test_production_monitor.py": "b4a57d3c55ef89bd4d3c491e1b0394dfb1ff2ff502c059ef328305d03811b0f5",
+    "deploy/mcp-driftguard-monitor.service": "8f5bc9fd6eb768a93959273bef105d6bb4b3e0ab8b335ce9b86e0f453ea9132a",
+    "deploy/mcp-driftguard-monitor.example.json": "b35d1bc2afb8ac024823fe38ba9b9a19a31d3c00365047865e21f0ba68388fb0",
+    "deploy/mcp-driftguard-alerts.example.json": "fbd1d237890f82816e3117a9b2076b06bc38970ed80600d5a5c26bfeafca8a90",
+    "docs/PRODUCTION-MONITOR.md": "e1e3d6cd140acc66e2306db456373e33ea79117ac6786eebfaf6b16f4b86336d",
+    ".github/workflows/ci.yml": "f21a924687f6caf288186878e96c95ac455b84b5f9229fb6fc7c49ab1570bf33"
+  }
+}

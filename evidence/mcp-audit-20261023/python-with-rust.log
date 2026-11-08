@@ -1,0 +1,7 @@
+artifact mutation tests PASS
+...........................................
+----------------------------------------------------------------------
+Ran 43 tests in 1.576s
+
+OK
+PASS: TLS MemoryBIO + HTTP handler + simulated signed approve/deny (network sockets prohibited)

@@ -1,0 +1,225 @@
+{
+  "working_tree_dirty": false,
+  "started_utc": "2026-10-23T14:48:46Z",
+  "base_commit": "8100533a1db17349fbf699a17fda1f905204581c",
+  "suites": {
+    "conformance": {
+      "command": [
+        "python3",
+        "scripts/conformance_suite.py",
+        "--output",
+        "/dev/shm/driftguard-final2/conformance-final.json"
+      ],
+      "exit": 1,
+      "seconds": 28.89,
+      "log_sha256": "e74250075a39a621b68ee4cb3bd66c8b87c03eca67cd10b6c1b42aca08758782"
+    },
+    "go_core_race": {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./cmd/mcpdrift",
+        "./internal/baseline",
+        "./internal/canonical",
+        "./internal/diff",
+        "./internal/report",
+        "./internal/mcpserver"
+      ],
+      "exit": 0,
+      "seconds": 0.17,
+      "log_sha256": "47b6b35ae3ef11a99dffb3d9bcbcc7420ece9d3aab622a36feb4e0bab156e258"
+    },
+    "go_stdio_security": {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./internal/observe",
+        "-run",
+        "Test(Stdio|Sandbox|RejectEndpointURLCredentialsBeforeNetwork|OAuthIssuerApprovalIsExactOrigin|GuardedDialRejects)"
+      ],
+      "exit": 1,
+      "seconds": 0.77,
+      "log_sha256": "a1242324921dfd631ebe3aa905df7859acfc86900792003bad8a0f26892efa59"
+    },
+    "go_observe_pure": {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./internal/observe",
+        "-run",
+        "Test(StdioTool|StdioSchema|StdioSandboxRejects|RejectEndpointURLCredentialsBeforeNetwork|OAuthIssuerApprovalIsExactOrigin|GuardedDialRejects)"
+      ],
+      "exit": 0,
+      "seconds": 0.17,
+      "log_sha256": "cf9b39b6c9a44fec37347f5f99a777d56af2e4a9563e766102b4dbf70c2d2255"
+    },
+    "go_vet": {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit": 0,
+      "seconds": 0.17,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "sdk_e2e": {
+      "command": [
+        "python3",
+        "scripts/test_mcp_server.py"
+      ],
+      "exit": 0,
+      "seconds": 1.62,
+      "log_sha256": "510bd38fe6e7771695f1dd30f87ca55fddfe763ae39a608afa832e26816f3945"
+    },
+    "python": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts",
+        "-p",
+        "test_*.py"
+      ],
+      "exit": 0,
+      "seconds": 1.47,
+      "log_sha256": "f440d0ad2f6890fd2e973e67ce0ae11cc9f6beadc39cb7e6b8e7c1556ebc54f5"
+    },
+    "release_mutations": {
+      "command": [
+        "python3",
+        "scripts/test_release_integrity.py"
+      ],
+      "exit": 0,
+      "seconds": 0.12,
+      "log_sha256": "cf8d3a2572a7898fcf32a4c2dd1445509b3d59e66061853243c4627f80695068"
+    },
+    "artifact_mutations": {
+      "command": [
+        "python3",
+        "scripts/test_verify_artifacts.py"
+      ],
+      "exit": 0,
+      "seconds": 0.06,
+      "log_sha256": "d99a3b3e193f653998a65f72eda5408b9a0b4f4d8925a8c72e3d23817c26f9a6"
+    },
+    "historical_mutations": {
+      "command": [
+        "python3",
+        "scripts/historical_mutation.py"
+      ],
+      "exit": 1,
+      "seconds": 40.8,
+      "log_sha256": "6381fbc0f57875ab0771bb30978ed5bb5f18f42bbd0e4cbc44282375ee27eff7"
+    },
+    "codex_host": {
+      "command": [
+        "python3",
+        "scripts/test_codex_clean_config.py"
+      ],
+      "exit": 2,
+      "seconds": 0.06,
+      "log_sha256": "24aa16a46e7edb6e2d0bbba9433f1913831395fa901f89d6938734bf6c69e338"
+    },
+    "rust": {
+      "command": [
+        "cargo",
+        "test",
+        "--manifest-path",
+        "broker/Cargo.toml",
+        "--locked",
+        "--offline"
+      ],
+      "exit": 0,
+      "seconds": 1.72,
+      "log_sha256": "27e758621e4880a2061bbd74fd5a54fe0900f6ec91b5ba8fadccf1109dc0b3b2"
+    },
+    "python_with_rust": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts",
+        "-p",
+        "test_*.py"
+      ],
+      "exit": 0,
+      "seconds": 1.97,
+      "log_sha256": "64f76d80bb583b2f56ebeb53cb74555c3a5235d5d1ea24a334909283f69edae7"
+    },
+    "rust_clippy": {
+      "command": [
+        "cargo",
+        "clippy",
+        "--manifest-path",
+        "broker/Cargo.toml",
+        "--locked",
+        "--offline",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit": 0,
+      "seconds": 0.27,
+      "log_sha256": "a5f4c585ee974ca44916ac30a98bbc189e067a7e0a6bc6d2e8d6bc525be724af"
+    },
+    "rust_fmt": {
+      "command": [
+        "cargo",
+        "fmt",
+        "--manifest-path",
+        "broker/Cargo.toml",
+        "--",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.22,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cross_build": {
+      "command": [
+        "python3",
+        "scripts/build_artifacts.py",
+        "/dev/shm/driftguard-final2/candidates"
+      ],
+      "exit": 0,
+      "seconds": 3.98,
+      "log_sha256": "857e4366c56ad15cfb578cd387e9e369c5d798f5a0dba247c859cdad964298f8"
+    },
+    "verify_candidates": {
+      "command": [
+        "python3",
+        "scripts/verify_artifacts.py",
+        "/dev/shm/driftguard-final2/candidates"
+      ],
+      "exit": 0,
+      "seconds": 0.27,
+      "log_sha256": "d9d837f8fbd83dc53e000284b953c0a585cadf6c140049ad404d329e946c14a9"
+    },
+    "fuzz_canonical": {
+      "command": [
+        "go",
+        "test",
+        "./internal/canonical",
+        "-run",
+        "^$",
+        "-fuzz",
+        "Fuzz",
+        "-fuzztime=200000x",
+        "-parallel=2"
+      ],
+      "exit": 0,
+      "seconds": 9.1,
+      "log_sha256": "945ea5e0f25b9b62cef0f498c058befe9e330da54389682200e3054bd2aebb79"
+    }
+  },
+  "passed": false
+}

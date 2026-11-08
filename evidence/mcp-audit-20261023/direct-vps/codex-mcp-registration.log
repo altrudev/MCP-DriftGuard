@@ -1,0 +1,5 @@
+Name             Command                           Args                                                                                                                                                                             Env  Cwd  Status   Auth
+driftguard-test  /home/ubuntu/.local/bin/mcpdrift  serve --endpoint stdio --baseline /dev/shm/driftguard-live/approved.json --verify-key /dev/shm/driftguard-live/test.public.pem --stdio-exec /dev/shm/driftguard-live/fixture.py  -    -    enabled  Unsupported
+
+Local VPS installation: /home/ubuntu/.local/bin/mcpdrift
+Codex registration was verified in isolated CODEX_HOME with a synthetic target and signed test baseline; not installed in the user global Codex configuration or a production agent.

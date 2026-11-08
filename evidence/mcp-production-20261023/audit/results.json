@@ -1,0 +1,168 @@
+{
+  "working_tree_dirty": true,
+  "started_utc": "2026-10-23T15:12:16Z",
+  "base_commit": "b90dc239a8a144bf84d66d2aeb1b71553afaa029",
+  "suites": {
+    "conformance": {
+      "command": [
+        "python3",
+        "scripts/conformance_suite.py",
+        "--output",
+        "/dev/shm/driftguard-production-audit/conformance-final.json"
+      ],
+      "exit": 1,
+      "seconds": 64.1,
+      "log_sha256": "e74250075a39a621b68ee4cb3bd66c8b87c03eca67cd10b6c1b42aca08758782"
+    },
+    "go_core_race": {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./cmd/mcpdrift",
+        "./internal/baseline",
+        "./internal/canonical",
+        "./internal/diff",
+        "./internal/report",
+        "./internal/mcpserver"
+      ],
+      "exit": 0,
+      "seconds": 0.17,
+      "log_sha256": "47b6b35ae3ef11a99dffb3d9bcbcc7420ece9d3aab622a36feb4e0bab156e258"
+    },
+    "go_stdio_security": {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./internal/observe",
+        "-run",
+        "Test(Stdio|Sandbox|RejectEndpointURLCredentialsBeforeNetwork|OAuthIssuerApprovalIsExactOrigin|GuardedDialRejects)"
+      ],
+      "exit": 1,
+      "seconds": 0.77,
+      "log_sha256": "cf2cfd97d6c71593283691f93ba8b761481fc47514c64f15e77810ce9136c33c"
+    },
+    "go_observe_pure": {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./internal/observe",
+        "-run",
+        "Test(StdioTool|StdioSchema|StdioSandboxRejects|RejectEndpointURLCredentialsBeforeNetwork|OAuthIssuerApprovalIsExactOrigin|GuardedDialRejects)"
+      ],
+      "exit": 0,
+      "seconds": 1.72,
+      "log_sha256": "ed20148e944682f9d3b8196e8a62595b7c51059ef1ac003dea4d73c50dc710c9"
+    },
+    "go_vet": {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit": 0,
+      "seconds": 0.17,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "sdk_e2e": {
+      "command": [
+        "python3",
+        "scripts/test_mcp_server.py"
+      ],
+      "exit": 0,
+      "seconds": 3.69,
+      "log_sha256": "510bd38fe6e7771695f1dd30f87ca55fddfe763ae39a608afa832e26816f3945"
+    },
+    "release_mutations": {
+      "command": [
+        "python3",
+        "scripts/test_release_integrity.py"
+      ],
+      "exit": 0,
+      "seconds": 0.12,
+      "log_sha256": "cf8d3a2572a7898fcf32a4c2dd1445509b3d59e66061853243c4627f80695068"
+    },
+    "artifact_mutations": {
+      "command": [
+        "python3",
+        "scripts/test_verify_artifacts.py"
+      ],
+      "exit": 0,
+      "seconds": 0.06,
+      "log_sha256": "d99a3b3e193f653998a65f72eda5408b9a0b4f4d8925a8c72e3d23817c26f9a6"
+    },
+    "historical_mutations": {
+      "command": [
+        "python3",
+        "scripts/historical_mutation.py"
+      ],
+      "exit": 1,
+      "seconds": 41.2,
+      "log_sha256": "743062156126deb1e76281227cd6e1703546f82c1647624918cfe224b6829633"
+    },
+    "codex_host": {
+      "command": [
+        "python3",
+        "scripts/test_codex_clean_config.py"
+      ],
+      "exit": 0,
+      "seconds": 0.52,
+      "log_sha256": "b499fca1e3e6625410b51b9d3e73714fe7cabd69aee863d442219245c88e99e3"
+    },
+    "cross_build": {
+      "command": [
+        "python3",
+        "scripts/build_artifacts.py",
+        "/dev/shm/driftguard-production-audit/candidates"
+      ],
+      "exit": 0,
+      "seconds": 66.32,
+      "log_sha256": "2b77b7d5ec8e295b3a2216776cf00aebf75e1bbb63ef7f4960aa673e7fa43c8f"
+    },
+    "verify_candidates": {
+      "command": [
+        "python3",
+        "scripts/verify_artifacts.py",
+        "/dev/shm/driftguard-production-audit/candidates"
+      ],
+      "exit": 0,
+      "seconds": 0.27,
+      "log_sha256": "c942fb2c7c3c2bbb431b9df7b128d8000f946a37b074784fbac43c74077a4089"
+    },
+    "fuzz_canonical": {
+      "command": [
+        "go",
+        "test",
+        "./internal/canonical",
+        "-run",
+        "^$",
+        "-fuzz",
+        "Fuzz",
+        "-fuzztime=200000x",
+        "-parallel=2"
+      ],
+      "exit": 0,
+      "seconds": 14.4,
+      "log_sha256": "68230de135d2128fb61b33ed734586f96705f3a1b1c4d3dc043c3f899fd6edad"
+    },
+    "mcp_python": {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts",
+        "-p",
+        "test_probe_local_mcp.py"
+      ],
+      "exit": 0,
+      "seconds": 0.17,
+      "log_sha256": "56e03afda220e7ba78bbcecf9a2e53a0149cfc3e311fa10bbd01b25e8e5ba671"
+    }
+  },
+  "scope": "mcp",
+  "passed": false
+}

@@ -1,0 +1,8 @@
+ok  	github.com/altrudev/MCP-DriftGuard/cmd/mcpdrift	(cached)
+?   	github.com/altrudev/MCP-DriftGuard/examples/demo-server	[no test files]
+ok  	github.com/altrudev/MCP-DriftGuard/internal/baseline	(cached)
+ok  	github.com/altrudev/MCP-DriftGuard/internal/canonical	(cached)
+ok  	github.com/altrudev/MCP-DriftGuard/internal/diff	(cached)
+ok  	github.com/altrudev/MCP-DriftGuard/internal/mcpserver	(cached)
+ok  	github.com/altrudev/MCP-DriftGuard/internal/observe	(cached)
+ok  	github.com/altrudev/MCP-DriftGuard/internal/report	(cached)

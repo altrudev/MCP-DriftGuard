@@ -1,0 +1,18 @@
+{
+  "INSTALL.md": "b6e5b43d94c27b5d25d1531a2a3e4d6233421d18cc3e0932a18b9e7ad79eb2ae",
+  "README.md": "3e253c0a8da212b47986e0752fd97ebaa4f07c3b72a3bd79c1a3132c2b2aa7f5",
+  "broker/src/attestation.rs": "09bb95de82d69f3119039306de20960ab3bb8b01473b6a4819101fd3de71a053",
+  "cmd/mcpdrift/main.go": "7f6c77944142d1369048ae9b85141610d97555832cf282643c7f97a691e8ef54",
+  "cmd/mcpdrift/main_test.go": "0b040267b1169edd61627d7b49882b801a87d0930aadf2a74cf497ad63d5b2d6",
+  "internal/mcpserver/server.go": "5959df89c50888d517c6a24290e13cc3989a7e3cfa098a390075b250e96bd4b8",
+  "internal/mcpserver/server_test.go": "cddc01a746daf73850d978360287e437b36814cbb797574798cbb209c8baa9c0",
+  "scripts/audit_mcp_driftguard.py": "e33de914cafcf5705a2178f9d60e491aca7669761077097c6938c59fe505cf73",
+  "scripts/historical_mutation.py": "d342a4ab0c6d6fbb91bdb898ecd2f4275883aa4b252f1378bdd54f882b6fc259",
+  "scripts/mcp-sdk-client/go.mod": "7f0d7eed2b95975c00b9661e1db21babdb2003f51664967e022b64a136586469",
+  "scripts/mcp-sdk-client/go.sum": "8acdb9d4325b8b92a612beeadabd9eca6ec980fc8d8f957c22b00e83d5ec3753",
+  "scripts/mcp-sdk-client/main.go": "c50dab2164c921ba02ff7f47fc49278df4564d1121e75351b095342797816e01",
+  "scripts/test_codex_clean_config.py": "58d953618c46c71b8e0d212a0ce8f041b74ac948a13530aebbfea8ccae32429e",
+  "scripts/test_historical_mutation.py": "ae1b46f55fe5e63982416ab5e0a5b7a15d8b51ec4c214b10fd540866173a0d99",
+  "scripts/test_mcp_server.py": "67f3894416b17928041fc5bc11d2b109b6b1d5df583b6c70f76418fc54fe45b8",
+  "skills/mcp-driftguard/SKILL.md": "9eefa52be22c44739fb41709973a5b17e4ed5152deea944180d92776a957abcb"
+}

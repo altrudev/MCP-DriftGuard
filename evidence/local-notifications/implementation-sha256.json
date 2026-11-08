@@ -1,0 +1,13 @@
+{
+  "README.md": "8c0d57768318f5f48f51173a8677dc25e0128c7c32f265e1462345f7cc161115",
+  "docs/PRODUCTION-MONITOR.md": "cba38c3850cec6c16025f1ddee2a7c43a68ae9d1789b7502b775b348d92bfa74",
+  "internal/mcpserver/server.go": "c9cf95702e6f2c2f9d3f025f25eca5df4d94127bff2e3aca93189de19ad9a0ad",
+  "internal/mcpserver/server_test.go": "81b0ec97a64dd9573c656eaacc392a2c6d96c00fd504d2ef5cdd79d75d64100e",
+  "scripts/conformance_suite.py": "b4367f1f33e44f144daf208a0063735ee970b656887545a3a07d2ae57beb7274",
+  "scripts/install_user_monitor.py": "b7ab2179e503091c6a7c64b5e77beb7e175d6428ee13c05069130689b5c2ab56",
+  "scripts/production_monitor.py": "aa9ce4808b22e04a823ae55da9dc907e23922d42696cf1424fb7a4832da64a43",
+  "scripts/local_notifications.py": "a6d87a367772401507283921f3de5f5e40b5f8f40c89f2ae82605ea06c05d8a6",
+  "scripts/test_local_notifications.py": "7ab1c9d6ccf948b70767a40ced55666159179cece26753048cdc94aaa575e008",
+  "scripts/test_production_monitor.py": "1ab822f4b01f7810c81380f275ccc86051b79c8dc3273ae28fb4a9ed3208afa1",
+  "skills/mcp-driftguard/SKILL.md": "ef8a4d721f814801e4236cc2b5fb1739adc87f86a0b47bf318646ab2900492d3"
+}

@@ -1,0 +1,34 @@
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/dev/shm -Djava.io.tmpdir=/dev/shm/frequency-guardian-tmp
+warning: [options] system modules path not set in conjunction with -source 17
+1 warning
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/dev/shm -Djava.io.tmpdir=/dev/shm/frequency-guardian-tmp
+app/src/main/java/dev/frequency/guardian/DeviceIdentity.kt:51:197: warning: 'val isInsideSecureHardware: Boolean' is deprecated. Deprecated in Java.
+    fun hardware(): Boolean = if (Build.VERSION.SDK_INT >= 31) info().securityLevel in listOf(KeyProperties.SECURITY_LEVEL_TRUSTED_ENVIRONMENT, KeyProperties.SECURITY_LEVEL_STRONGBOX) else info().isInsideSecureHardware
+                                                                                                                                                                                                    ^^^^^^^^^^^^^^^^^^^^^^
+app/src/main/java/dev/frequency/guardian/DeviceIdentity.kt:61:22: warning: 'val isInsideSecureHardware: Boolean' is deprecated. Deprecated in Java.
+        } else if (i.isInsideSecureHardware) "Secure hardware (API 30 cannot distinguish TEE/StrongBox)" else "Software — signing disabled"
+                     ^^^^^^^^^^^^^^^^^^^^^^
+app/src/main/java/dev/frequency/guardian/DiagnosticAttestation.kt:50:23: warning: 'val isInsideSecureHardware: Boolean' is deprecated. Deprecated in Java.
+            else info.isInsideSecureHardware
+                      ^^^^^^^^^^^^^^^^^^^^^^
+app/src/main/java/dev/frequency/guardian/MainActivity.kt:75:23: warning: 'fun updateConfiguration(p0: Configuration!, p1: DisplayMetrics!): Unit' is deprecated. Deprecated in Java.
+            resources.updateConfiguration(config, resources.displayMetrics)
+                      ^^^^^^^^^^^^^^^^^^^
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/dev/shm -Djava.io.tmpdir=/dev/shm/frequency-guardian-tmp
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/dev/shm -Djava.io.tmpdir=/dev/shm/frequency-guardian-tmp
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/dev/shm -Djava.io.tmpdir=/dev/shm/frequency-guardian-tmp
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/dev/shm -Djava.io.tmpdir=/dev/shm/frequency-guardian-tmp
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): false
+Verified using v3 scheme (APK Signature Scheme v3): true
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+Number of signers: 1
+cc4abcb5558f0f1b31bfd793bcade8dcb4bb7fe896329392a1af4d7683d34694  /dev/shm/frequency-guardian-build/sdk-offline/FrequencyGuardian-0.3.0-debug.apk
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=/dev/shm -Djava.io.tmpdir=/dev/shm/frequency-guardian-tmp
+Signer #1 certificate DN: CN=Android Debug, O=Android, C=US
+Signer #1 certificate SHA-256 digest: bf7bc2c8f1943f0af8824f97042b00d6587c9b382132435714cb8cea225a89cf
+Signer #1 certificate SHA-1 digest: 3f160b10214f27e33aae5dc0a55f49b28d8f08af
+Signer #1 certificate MD5 digest: cfff90b19f0159571fc77fb2c31bc349

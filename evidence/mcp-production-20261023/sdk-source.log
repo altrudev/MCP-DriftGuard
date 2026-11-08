@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/home/ubuntu/guardian-v030-repair/scripts/test_mcp_server.py", line 34, in <module>
+    main()
+    ~~~~^^
+  File "/home/ubuntu/guardian-v030-repair/scripts/test_mcp_server.py", line 25, in main
+    run(["go", "-C", ROOT / "scripts/mcp-sdk-client", "build", "-mod=readonly", "-o", client, "."])
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/guardian-v030-repair/scripts/test_mcp_server.py", line 22, in run
+    return subprocess.run(list(map(str, args)), cwd=ROOT, check=True,
+           ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                          text=True, capture_output=True, timeout=120, **kwargs)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['go', '-C', '/home/ubuntu/guardian-v030-repair/scripts/mcp-sdk-client', 'build', '-mod=readonly', '-o', '/dev/shm/driftguard-production-check/driftguard-sdk-8idukq3c/client', '.']' returned non-zero exit status 1.

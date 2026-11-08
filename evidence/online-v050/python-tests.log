@@ -1,0 +1,16 @@
+test_authority_initialization_reload_permissions_and_clock (test_guardian_offline.OfflineTests.test_authority_initialization_reload_permissions_and_clock) ... ok
+test_encoding_and_durable_failure (test_guardian_offline.OfflineTests.test_encoding_and_durable_failure) ... ok
+test_full_request_decision_replay_and_revocation (test_guardian_offline.OfflineTests.test_full_request_decision_replay_and_revocation) ... ok
+test_independent_enrollment_and_policy_negatives (test_guardian_offline.OfflineTests.test_independent_enrollment_and_policy_negatives) ... ok
+test_revocation_fetch_fails_closed (test_guardian_offline.OfflineTests.test_revocation_fetch_fails_closed) ... ok
+test_status_response_freshness_and_redirects (test_guardian_offline.OfflineTests.test_status_response_freshness_and_redirects) ... ok
+test_unissued_expired_wrong_key_and_corrupt_signatures (test_guardian_offline.OfflineTests.test_unissued_expired_wrong_key_and_corrupt_signatures) ... ok
+test_actual_tls_simulated_client_and_http_negatives (test_guardian_online.OnlineTests.test_actual_tls_simulated_client_and_http_negatives) ... ok
+test_auth_tamper_expiry_status_failure_rate_limits (test_guardian_online.OnlineTests.test_auth_tamper_expiry_status_failure_rate_limits) ... ok
+test_decisions_durability_replay_revocation (test_guardian_online.OnlineTests.test_decisions_durability_replay_revocation) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.330s
+
+OK
+PASS: TLS MemoryBIO + HTTP handler + simulated signed approve/deny (network sockets prohibited)

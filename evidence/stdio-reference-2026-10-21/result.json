@@ -1,0 +1,11 @@
+{
+  "server": "@modelcontextprotocol/server-everything@2.0.0",
+  "source_commit": "51b5573aac1045bd2be6bb7911f9a755df388b8e",
+  "tools": 16,
+  "tools_with_input_schema": 16,
+  "tools_with_annotations": 16,
+  "inspect": "PASS",
+  "baseline": "PASS",
+  "unchanged_verify": "PASS",
+  "independent_third_party": "NOT_ESTABLISHED"
+}

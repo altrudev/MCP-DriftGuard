@@ -1,0 +1,31 @@
+ok  	github.com/altrudev/MCP-DriftGuard/cmd/mcpdrift	1.030s
+?   	github.com/altrudev/MCP-DriftGuard/examples/demo-server	[no test files]
+ok  	github.com/altrudev/MCP-DriftGuard/internal/baseline	(cached)
+ok  	github.com/altrudev/MCP-DriftGuard/internal/canonical	(cached)
+ok  	github.com/altrudev/MCP-DriftGuard/internal/diff	(cached)
+ok  	github.com/altrudev/MCP-DriftGuard/internal/mcpserver	(cached)
+--- FAIL: TestSafeTransportLoopbackAndNoProxy (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: socket: operation not permitted [recovered, repanicked]
+
+goroutine 8 [running]:
+testing.tRunner.func1.2({0x9d2a00, 0xc00003c530})
+	/usr/lib/go-1.26/src/testing/testing.go:1974 +0x419
+testing.tRunner.func1()
+	/usr/lib/go-1.26/src/testing/testing.go:1977 +0x67f
+panic({0x9d2a00?, 0xc00003c530?})
+	/usr/lib/go-1.26/src/runtime/panic.go:860 +0x13a
+net/http/httptest.newLocalListener()
+	/usr/lib/go-1.26/src/net/http/httptest/server.go:72 +0x165
+net/http/httptest.NewUnstartedServer(...)
+	/usr/lib/go-1.26/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0xa8e3e0, 0xa87e00})
+	/usr/lib/go-1.26/src/net/http/httptest/server.go:107 +0x2c
+github.com/altrudev/MCP-DriftGuard/internal/observe.TestSafeTransportLoopbackAndNoProxy(0xc0000de6c8)
+	/home/ubuntu/guardian-v030-repair/internal/observe/dial_policy_test.go:25 +0x8f
+testing.tRunner(0xc0000de6c8, 0xa87c70)
+	/usr/lib/go-1.26/src/testing/testing.go:2036 +0x21d
+created by testing.(*T).Run in goroutine 1
+	/usr/lib/go-1.26/src/testing/testing.go:2101 +0xb13
+FAIL	github.com/altrudev/MCP-DriftGuard/internal/observe	0.019s
+ok  	github.com/altrudev/MCP-DriftGuard/internal/report	(cached)
+FAIL

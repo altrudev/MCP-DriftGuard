@@ -1,0 +1,19 @@
+{
+  "format": "mcpdrift-local-discovery/v1",
+  "endpoint": "http://127.0.0.1:8765/mcp",
+  "binary_sha256": "5439dc64d6a5ecf55c480347b8d21af2dd12a194b79ef91f0a9b538b8c71caf0",
+  "timestamp_utc": "2026-10-23T17:25:15Z",
+  "baseline_approved": false,
+  "monitoring_enabled": false,
+  "limitations": [
+    "JSON HTTP discovery only",
+    "inventory agreement is not baseline approval"
+  ],
+  "independent_discovery": "INCONCLUSIVE",
+  "independent_error_type": "URLError",
+  "independent_errno": 1,
+  "inspector_exit": 3,
+  "inspector_stderr_sha256": "8b156232a1f46c73320107be018a8735fd00157247cbec7796f2d54f894d9f35",
+  "inspector": "INCONCLUSIVE",
+  "passed": false
+}

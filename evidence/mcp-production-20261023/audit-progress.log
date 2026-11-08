@@ -1,0 +1,14 @@
+conformance 1
+go_core_race 0
+go_stdio_security 1
+go_observe_pure 0
+go_vet 0
+sdk_e2e 0
+release_mutations 0
+artifact_mutations 0
+historical_mutations 1
+codex_host 0
+cross_build 0
+verify_candidates 0
+fuzz_canonical 0
+mcp_python 0

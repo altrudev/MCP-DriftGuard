@@ -1,0 +1,17 @@
+{
+  "apk": "android/FrequencyGuardian/app/build/outputs/apk/debug/FrequencyGuardian-0.4.0-debug.apk",
+  "sha256": "d49f58ed15fb722ad98f83d44c9d378a524fd6eb32b7c511807b189a5adcbec3",
+  "bytes": 742219,
+  "apk_signer_sha256": "22a93e33cfd83c40797240407203c603e54d7cecf1482ea08c55fc33871bd572",
+  "dex_biometric_api_references": false,
+  "rust_tests_passed": 28,
+  "python_offline_tests_passed": 7,
+  "kotlin_negative_protocol_cases": 19,
+  "physical_device_acceptance": false,
+  "production_release_accepted": false,
+  "published": false,
+  "emulator_upgrade_install_passed": true,
+  "emulator_launch_passed": true,
+  "versionCode": 4,
+  "versionName": "0.4.0"
+}

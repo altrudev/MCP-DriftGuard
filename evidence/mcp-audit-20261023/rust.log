@@ -1,0 +1,120 @@
+   Compiling driftguard-broker v0.1.0 (/dev/shm/driftguard-commit/broker)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.13s
+     Running unittests src/lib.rs (/dev/shm/driftguard-final/rust/debug/deps/driftguard_broker-f42d1cc42d35e4d8)
+
+running 10 tests
+test attestation::tests::rejects_bad_der ... ok
+test attestation::tests::refuses_self_assertions_and_bounds ... ok
+test runner::live::data_snapshot_starts_at_zero_and_rejects_mutation ... ok
+test runner::live::sealed_snapshots_survive_only_explicit_child_exec ... ok
+test runner::live::child_exec_excludes_unrelated_non_cloexec_host_descriptor ... ok
+test coordinator::tests::successful_record_preserves_observed_verdict_and_provenance ... ok
+test coordinator::tests::failure_burns_id_and_record_binds_exact_policy ... ok
+test coordinator::tests::invalid_signature_expiry_missing_and_unsafe_ledger_deny_before_runner ... ok
+test coordinator::tests::live_coordinator_authorized_fixture_execution ... ok
+test coordinator::tests::live_coordinator_failed_fixture_burns_id ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.58s
+
+     Running unittests src/main.rs (/dev/shm/driftguard-final/rust/debug/deps/driftguard_broker-4e8c1d07bda5d2c5)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/guardian-acceptance.rs (/dev/shm/driftguard-final/rust/debug/deps/guardian_acceptance-adac14ad0adf1afa)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/guardian-attestation.rs (/dev/shm/driftguard-final/rust/debug/deps/guardian_attestation-c4eaf098ed326585)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/guardian-challenge.rs (/dev/shm/driftguard-final/rust/debug/deps/guardian_challenge-7bd956cd0468d3c0)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/guardian-enrollment.rs (/dev/shm/driftguard-final/rust/debug/deps/guardian_enrollment-0ac83dcf5821e4af)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/guardian-recovery.rs (/dev/shm/driftguard-final/rust/debug/deps/guardian_recovery-9e04c949ef24c97b)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/attestation.rs (/dev/shm/driftguard-final/rust/debug/deps/attestation-dbc30b745f61b816)
+
+running 1 test
+test pinned_chain_challenge_properties_and_signature ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests/contracts.rs (/dev/shm/driftguard-final/rust/debug/deps/contracts-6cd7b447a6a61ef1)
+
+running 8 tests
+test strict_json_and_endpoint_contract ... ok
+test invalid_signature_never_burns ... ok
+test python_generated_signature_and_exact_canonical_bytes ... ok
+test cli_denies_invalid_invocation_and_malformed_policy ... ok
+test mutation_and_time_boundaries ... ok
+test signed_but_inconsistent_evidence_and_invalid_envelopes_fail ... ok
+test signed_policy_and_independent_evidence ... ok
+test exclusive_replay_concurrency_and_symlinks ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/guardian_acceptance.rs (/dev/shm/driftguard-final/rust/debug/deps/guardian_acceptance-8d304e3832215374)
+
+running 1 test
+test refuses_unverified_or_forged_inputs ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/guardian_binding.rs (/dev/shm/driftguard-final/rust/debug/deps/guardian_binding-521fcf0472cf9858)
+
+running 1 test
+test valid_signature_and_all_negative_mutations ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/guardian_challenge.rs (/dev/shm/driftguard-final/rust/debug/deps/guardian_challenge-e5502a0f78548735)
+
+running 1 test
+test issued_challenge_is_random_bounded_and_one_use ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/recovery.rs (/dev/shm/driftguard-final/rust/debug/deps/recovery-539b18b2c3c70e17)
+
+running 2 tests
+test durable_one_use_nonce_rejects_replay_and_unsafe_ledger ... ok
+test quorum_and_negative_cases ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running tests/runner.rs (/dev/shm/driftguard-final/rust/debug/deps/runner-a453d7370eb008ba)
+
+running 4 tests
+test tampering_endpoint_expiry_and_live_authorization_deny ... ok
+test bounded_streams_deadline_and_nonregular_inputs ... ok
+test go_contract_verdicts_and_operational_errors ... ok
+test live_namespace_contract ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.29s
+
+   Doc-tests driftguard_broker
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

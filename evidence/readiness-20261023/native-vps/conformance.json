@@ -1,0 +1,64 @@
+{
+  "arch": "x86_64",
+  "commit": "32ca6c7e1d71bedd64179be7b71bd342038cc39b",
+  "format": "mcpdrift-conformance-evidence/v1",
+  "limitations": [
+    "Local tests are not formal certification",
+    "Federation external rerun remains independently controlled",
+    "Agent-host integration and Windows/macOS native executions not established"
+  ],
+  "passed": true,
+  "platform": "Linux",
+  "suites": {
+    "docs": {
+      "exit": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "c4c25a4d5ec75b9f6c69bde40b1cbb820770ff76af203236dc3377bdff914796",
+      "stdout_tail": "Documentation structure, canonical glossary links, licensing and safety references: PASS\nManual technical terminology and legal review: STILL REQUIRED\n"
+    },
+    "extreme_limits": {
+      "exit": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "e137023bfeb047487c4fe4d9bdfd3d15cec982e3ba68eaa52e0bfceb2e8fdb20",
+      "stdout_tail": " },\n      \"stdout_digest\": \"09875a663a34e143e7ac49361403525b37ee6453622535546839984c14b8f3c2\",\n      \"tools\": 10000,\n      \"unchanged_exit\": 0\n    },\n    {\n      \"baseline_unchanged\": true,\n      \"exit_codes\": [\n        0\n      ],\n      \"jobs\": 100,\n      \"kind\": \"concurrent_verification\",\n      \"passed\": true,\n      \"workers\": 8\n    },\n    {\n      \"exit\": 3,\n      \"kind\": \"malformed_discovery\",\n      \"mode\": \"missing\",\n      \"passed\": true,\n      \"seconds\": 0.036\n    },\n    {\n      \"exit\": 3,\n      \"kind\": \"malformed_discovery\",\n      \"mode\": \"cursor-loop\",\n      \"passed\": true,\n      \"seconds\": 0.036\n    },\n    {\n      \"exit\": 3,\n      \"kind\": \"malformed_discovery\",\n      \"mode\": \"wrong-id\",\n      \"passed\": true,\n      \"seconds\": 0.039\n    },\n    {\n      \"exit\": 3,\n      \"kind\": \"malformed_discovery\",\n      \"mode\": \"malformed\",\n      \"passed\": true,\n      \"seconds\": 0.035\n    }\n  ]\n}\n\n"
+    },
+    "go_race": {
+      "exit": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "e4c0654d02526f16ba3ac370a0fdd4ac9a629be2cf05f27ff01b38262310aa89",
+      "stdout_tail": "ok  \tgithub.com/altrudev/MCP-DriftGuard/cmd/mcpdrift\t1.056s\n?   \tgithub.com/altrudev/MCP-DriftGuard/examples/demo-server\t[no test files]\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/baseline\t1.034s\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/canonical\t(cached)\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/diff\t(cached)\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/mcpserver\t(cached)\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/observe\t1.120s\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/report\t(cached)\n"
+    },
+    "go_unit": {
+      "exit": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "c5524259a811b0f513c0ba32b248896bab4aec2a8daae2934b1632972be3e071",
+      "stdout_tail": "ok  \tgithub.com/altrudev/MCP-DriftGuard/cmd/mcpdrift\t0.024s\n?   \tgithub.com/altrudev/MCP-DriftGuard/examples/demo-server\t[no test files]\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/baseline\t0.012s\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/canonical\t(cached)\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/diff\t(cached)\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/mcpserver\t(cached)\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/observe\t0.047s\nok  \tgithub.com/altrudev/MCP-DriftGuard/internal/report\t(cached)\n"
+    },
+    "go_vet": {
+      "exit": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_tail": ""
+    },
+    "http_acceptance": {
+      "exit": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "da1f189883265482d61fcbc7c51852414f073e6bf61f4434b664b42364d1db59",
+      "stdout_tail": "{\n  \"added_tool\": 2,\n  \"create_baseline\": 0,\n  \"detected_tool\": true,\n  \"deterministic_pass\": true,\n  \"missing_baseline\": 4,\n  \"tampered_baseline\": 5,\n  \"unchanged\": 0,\n  \"unchanged_match\": true,\n  \"unreachable\": 3\n}\n"
+    },
+    "stdio_acceptance": {
+      "exit": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr_tail": "",
+      "stdout_sha256": "956693566db314a6052c94604e544746efd7ee6e4424b50e726821cf3c062437",
+      "stdout_tail": "{\n  \"--malformed\": 3,\n  \"--missing-inventory\": 3,\n  \"--repeated-cursor\": 3,\n  \"--wrong-id\": 3,\n  \"bad_args\": 3,\n  \"baseline\": 0,\n  \"baseline_unchanged\": true,\n  \"detected_added_tool\": true,\n  \"drift\": 2,\n  \"env_secret_isolated\": true,\n  \"inspect\": 0,\n  \"inventory\": true,\n  \"linux_descendant_killed\": true,\n  \"pass\": true,\n  \"unapproved_args\": 3,\n  \"unapproved_executable\": 3,\n  \"unchanged\": 0\n}\n"
+    }
+  },
+  "timestamp_utc": "2026-10-23T17:28:31Z"
+}
