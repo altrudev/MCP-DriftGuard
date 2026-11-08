@@ -1,0 +1,11 @@
+{
+  "approved": false,
+  "binary": "/opt/mcp-driftguard/mcpdrift",
+  "baseline": "/etc/mcp-driftguard/approved-baseline.json",
+  "public_key": "/etc/mcp-driftguard/external-authority.pub.pem",
+  "sha256": {
+    "binary": "",
+    "baseline": "",
+    "public_key": ""
+  }
+}

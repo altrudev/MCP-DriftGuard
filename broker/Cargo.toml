@@ -1,0 +1,16 @@
+[package]
+name = "driftguard-broker"
+default-run = "driftguard-broker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.145"
+ed25519-dalek = "=2.2.0"
+sha2 = "=0.10.9"
+hex = "=0.4.3"
+base64 = "=0.22.1"
+libc = "=0.2.186"
+
+tempfile = "=3.27.0"

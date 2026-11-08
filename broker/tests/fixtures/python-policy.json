@@ -1,0 +1,17 @@
+{
+  "policy": {
+    "schema": "mcpdrift-operator-policy/v2",
+    "endpoint": "http://127.0.0.1:8080/mcp?q=%C3%A9",
+    "binary_sha256": "9a3a45d01531a20e89ac6ae10b0b0beb0492acd7216a368aa062d1a5fecaf9cd",
+    "baseline_sha256": "8ba8496a2525ae171ffd104d632dede6ef418d9b95962a9d88e2fcdbc8d48d24",
+    "authorization_id": "0123456789abcdef0123456789abcdef",
+    "issued_at": 1000,
+    "expires_at": 1300
+  },
+  "canonical": "{\"authorization_id\":\"0123456789abcdef0123456789abcdef\",\"baseline_sha256\":\"8ba8496a2525ae171ffd104d632dede6ef418d9b95962a9d88e2fcdbc8d48d24\",\"binary_sha256\":\"9a3a45d01531a20e89ac6ae10b0b0beb0492acd7216a368aa062d1a5fecaf9cd\",\"endpoint\":\"http://127.0.0.1:8080/mcp?q=%C3%A9\",\"expires_at\":1300,\"issued_at\":1000,\"schema\":\"mcpdrift-operator-policy/v2\"}",
+  "key_hex": "197f6b23e16c8532c6abc838facd5ea789be0c76b2920334039bfa8b3d368d61",
+  "envelope": {
+    "algorithm": "Ed25519",
+    "signature": "/5iEy+tHlPCcK7w/iJyTEVQqX4P/8Ijq5HnyxPwSA4+mQ4UDnGbcTOgL8i6/WN+vlOF7ybmZRbYwYJpDaExwCw=="
+  }
+}

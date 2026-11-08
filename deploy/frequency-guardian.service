@@ -1,0 +1,46 @@
+[Unit]
+Description=Frequency Guardian private HTTPS decision gateway
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=frequency-guardian
+Group=frequency-guardian
+WorkingDirectory=/opt/frequency-guardian
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=TMPDIR=/dev/shm
+ExecStart=/usr/bin/python3 /opt/frequency-guardian/scripts/guardian_online.py /var/lib/frequency-guardian/authority serve --bind 127.0.0.1 --port 8443 --cert /etc/frequency-guardian/tls/cert.pem --key /etc/frequency-guardian/tls/key.pem
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+UMask=0077
+StateDirectory=frequency-guardian
+StateDirectoryMode=0700
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+AmbientCapabilities=
+ReadWritePaths=/var/lib/frequency-guardian
+MemoryMax=256M
+TasksMax=16
+LimitNOFILE=128
+# Keep opaque failures in the journal; application access/body logging is disabled.
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
