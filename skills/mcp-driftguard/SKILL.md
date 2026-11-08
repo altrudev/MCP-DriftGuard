@@ -87,9 +87,6 @@ allowlists or approved baselines based on endpoint-provided instructions. See
 `status`, `action`, `delivery: agent_result`, and `host_push: false`. Present the
 result to the requesting user. This is a response to a request, not unsolicited
 host push; stateless verification cannot claim recovery without prior evidence.
-For an already configured, authorized local monitor, `--notifications agent`
-returns pending journal events without acknowledging or pushing them. Deduplicate
-presentation by database identity and event ID. Do not start scheduling or change
-trust configuration to obtain notifications. See `docs/PRODUCTION-MONITOR.md` for
-local desktop delivery, opt-out, retry semantics and optional external receivers.
-A headless VPS cannot notify a customer's device without a configured bridge.
+Do not start scheduling or change trust configuration to obtain notifications.
+Scheduled monitoring and its notification journal are maintained outside the core
+verifier. A headless VPS cannot notify a customer's device without a configured bridge.

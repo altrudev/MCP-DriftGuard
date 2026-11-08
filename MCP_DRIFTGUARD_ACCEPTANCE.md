@@ -1,3 +1,5 @@
+> Historical record. Run evidence referenced as `evidence/...` now lives on the `evidence-archive` branch; Guardian, broker and monitor material on the [DriftGuard-Mobile](https://github.com/altrudev/DriftGuard-Mobile) repository.
+
 # MCP DriftGuard operational acceptance — 2026-10-23
 
 **Acceptance is incomplete. No 100% operational or production-ready claim is justified.**

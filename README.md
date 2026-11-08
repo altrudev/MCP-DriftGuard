@@ -1,5 +1,3 @@
-> Android v0.5.0 online approval prototype: [setup](docs/GUARDIAN-ONLINE.md), [test results and APK](ONLINE_STATUS.md). Explicit HTTPS pairing and foreground polling; no automatic execution or production readiness claim.
-
 # MCP DriftGuard
 
 **Integrity verification for Model Context Protocol (MCP) servers.**
@@ -15,9 +13,8 @@ It is intentionally standalone: **no LLM, no DDC dependency, no hosted account, 
 The Go CLI also offers an operator-bound MCP stdio server through `mcpdrift serve`.
 It exposes read-only inspection and verification tools, a policy resource and a
 review prompt. See [installation](INSTALL.md) and the execution-specific
-[acceptance matrix](MCP_DRIFTGUARD_ACCEPTANCE.md). Android Guardian is optional and
-is not required for these MCP operations. Remote and production acceptance remains
-unproven.
+[acceptance matrix](MCP_DRIFTGUARD_ACCEPTANCE.md). Remote and production acceptance
+remains unproven.
 
 ## About
 
@@ -76,7 +73,6 @@ PASS / REVIEW / FAIL
 ## Install from source
 
 For prerequisites, Windows guidance, trusted installation, candidate baseline approval, experimental local stdio transport and agent-skill setup see [INSTALL.md](INSTALL.md).
-
 
 Requires Go 1.23+.
 
@@ -280,11 +276,9 @@ Licensed under the **Apache License 2.0**. See [LICENSE](LICENSE).
 
 Apache-2.0 permits commercial use and redistribution, includes an explicit patent grant, preserves attribution and NOTICE obligations, and does not grant project branding rights beyond customary attribution.
 
-
 Local operational checks can compare an installed binary with independent
 read-only discovery of an operator-selected loopback service. See
 [local acceptance instructions](INSTALL.md#local-operational-acceptance-without-baseline-approval).
-The audit runner supports `--scope mcp` to exclude optional Guardian/Rust checks.
 Production monitoring remains gated on independently trusted, approved artifacts;
 no baseline is approved automatically and no persistent monitor is installed by
 these checks.
@@ -294,13 +288,6 @@ signed approved baseline. Missing keys, unsigned artifacts, wrong keys, and
 signature/hash failures stop startup before stdin is read or discovery begins.
 See [stdio server configuration](INSTALL.md#driftguard-as-an-mcp-stdio-server).
 
-For one-shot, read-only monitoring of the existing Frequency Conduit endpoint,
-see [Production monitor operations](docs/PRODUCTION-MONITOR.md). Activation
-requires an independently approved signed baseline and external public trust key;
-the supplied hourly systemd timer is disabled by default.
-
-Customer-local monitor alerts use native desktop notifications by default, with a
-retryable SQLite drift/recovery journal and no remote service required. Agent mode
-returns structured actionable results without claiming unsolicited host push.
-A headless VPS cannot reach a customer device unaided. See
-[monitor setup and notification options](docs/PRODUCTION-MONITOR.md).
+Scheduled monitoring, desktop notifications and the optional Android approval app
+are not part of the core verifier. They are maintained separately in
+[DriftGuard-Mobile](https://github.com/altrudev/DriftGuard-Mobile).

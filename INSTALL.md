@@ -216,7 +216,7 @@ checks the command and arguments, and removes the registration. It does not invo
 a model or modify the normal Codex configuration. See the
 [official Codex MCP configuration instructions](https://developers.openai.com/learn/docs-mcp).
 
-For MCP-only audit suites, excluding the optional Android Guardian/Rust checks:
+For the MCP audit suites:
 
 ```sh
 python3 scripts/audit_mcp_driftguard.py --scope mcp --output /tmp/driftguard-audit
